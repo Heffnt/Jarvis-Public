@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A voice session: an agent Tom talks to out loud</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --page-bg: #fbfaf7; --page-text: #1d1d1b; --muted: #5b5b57; --rule: #d9d6cf;
+    --diagram-line: #55534e; --diagram-text: #1d1d1b; --diagram-edge-text: #45433f;
+    --deny: #b3402e; --replaced: #a27a3c; --proposed: #2f6fd0;
+    --node-program-fill: #e8f0fb; --node-program-stroke: #4a72b0;
+    --node-agent-fill: #e4ecf8; --node-agent-stroke: #2f5597;
+    --node-page-fill: #efe9f6; --node-page-stroke: #7a56a0;
+    --node-store-fill: #eaf5ec; --node-store-stroke: #4a8a5a;
+    --node-external-fill: #f6eee2; --node-external-stroke: #a27a3c;
+    --node-wall-fill: #fbe9e5; --node-wall-stroke: #b3402e;
+    --node-document-fill: #f7f4ea; --node-document-stroke: #8a7a3c;
+    --node-state-fill: #ecebe7; --node-state-stroke: #6b6965;
+    --node-person-fill: #f3e9f5; --node-person-stroke: #8a5a96;
+    --node-region-fill: transparent; --node-region-stroke: #b5b2aa;
+    --details-bg: #f3f1ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page-bg: #17181a; --page-text: #e8e6e1; --muted: #a9a6a0; --rule: #3a3b3e;
+      --diagram-line: #b9b6af; --diagram-text: #ecebe7; --diagram-edge-text: #cfccc5;
+      --deny: #e07a66; --replaced: #d1a462; --proposed: #78a8f0;
+      --node-program-fill: #1d2a3d; --node-program-stroke: #7fa3dc;
+      --node-agent-fill: #1a2640; --node-agent-stroke: #9ab8e8;
+      --node-page-fill: #2a2236; --node-page-stroke: #b89ad6;
+      --node-store-fill: #1d3024; --node-store-stroke: #79b98a;
+      --node-external-fill: #33291b; --node-external-stroke: #d1a462;
+      --node-wall-fill: #3a2320; --node-wall-stroke: #e07a66;
+      --node-document-fill: #2f2c20; --node-document-stroke: #c9b86a;
+      --node-state-fill: #26272a; --node-state-stroke: #a9a6a0;
+      --node-person-fill: #2e2233; --node-person-stroke: #bb8cc7;
+      --node-region-fill: transparent; --node-region-stroke: #4a4b4f;
+      --details-bg: #1f2023;
+    }
+  }
+  html, body { margin: 0; background: var(--page-bg); color: var(--page-text); }
+  body {
+    padding: 2rem 3rem;
+    font-family: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    font-size: 18px; line-height: 1.6;
+  }
+  h1, h2, h3, summary, svg text, nav { font-family: "Inter", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+  h1 { font-size: 2rem; margin: 0 0 1rem; }
+  h2 { font-size: 1.4rem; margin: 2.5rem 0 0.75rem; border-bottom: 1px solid var(--rule); padding-bottom: 0.3rem; }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 0.5rem; }
+  p, li { margin: 0 0 1rem; }
+  li { margin-bottom: 0.4rem; }
+  code { font-family: "JetBrains Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
+  table { border-collapse: collapse; width: 100%; margin: 0 0 1rem; }
+  th, td { border: 1px solid var(--rule); padding: 0.4rem 0.7rem; text-align: left; vertical-align: top; }
+  svg.diagram { display: block; width: 100%; height: auto; margin: 0.8rem 0 1rem; }
+  svg.legend { margin: 0.5rem 0 1rem; }
+  nav ol { columns: 2; column-gap: 3rem; font-size: 0.95em; }
+  nav li { margin-bottom: 0.25rem; }
+  a { color: inherit; }
+  details { border: 1px solid var(--rule); border-radius: 8px; background: var(--details-bg); padding: 0.3rem 0.9rem; margin: 0 0 0.6rem; }
+  details[open] { padding-bottom: 0.6rem; }
+  summary { cursor: pointer; font-weight: 600; padding: 0.3rem 0; }
+  details p:last-child, details table:last-child, details ul:last-child { margin-bottom: 0.2rem; }
+  .caption { color: var(--muted); font-size: 0.95em; }
+  .check-warning { border: 2px solid var(--deny); border-radius: 8px; padding: 0.5rem 0.9rem; font-family: "Inter", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>A voice session: an agent Tom talks to out loud</h1>
+
+<p>This page proposes a new kind of agent for Jarvis and explains it from the ground up for a reader who has seen none of it before. Jarvis is Tom's agent system: a set of programs and model-driven agents running on one rented Linux machine, called the box, which keeps his food and exercise records, his todo list, and builds the software he asks for. A session is an agent Tom talks with. Today every session is typed: he writes to it and it writes back. The proposal here is a session he speaks to and which speaks back, continuously, while he is doing something else — first inside a wearable prop, and after that anywhere he is.</p>
+
+<p>Every claim about the speech model's behaviour was read from OpenAI's published documentation on 12 October 2026, and where that documentation is silent the sentence says so, because several of the gaps change what should be built. Every claim about Jarvis was read from the agent rules and the Jarvis repository the same day. Where a conclusion is mine rather than documented, it is marked.</p>
+
+<h2 id="s-legend">Legend</h2>
+<svg id="legend" class="diagram legend"></svg>
+<p class="caption">One shape per type of thing, one line style per type of relation, the same on every drawing. A page is something you look at on tom.quest. A program is a process on the box that runs no model. An agent is a process that runs a model: a session, a subagent, a worker, the delegate. A store is data at rest: a database, a directory, a checkout. A wall is a check that can refuse an action without trusting the agent. A record row or document is a structured thing passed between parts: a work order, a brief, a row in the record. A state is one stage in a lifecycle. A solid arrow carries data or a message; a dashed arrow means the source starts the target; a dotted arrow means the source reads the target; the barred red arrow means the source can refuse what the target is doing. A dashed frame groups the parts inside it. On a drawing of a design, a plain outline is kept; an amber dashed outline is replaced, and its second line names what replaces it; a grey dashed outline with a strike is removed; a blue dashed outline is proposed, a part that does not exist yet.</p>
+
+<h2 id="s-overview">The whole proposal at a glance</h2>
+<svg id="overview" class="diagram"></svg>
+<p>Four things already exist and are drawn plain: Tom, the box, the record, and the website tom.quest. The record is the database behind that website, holding his food and exercise facts, his todos, and a row for every change Jarvis makes to its own code. Everything drawn with a blue dashed outline is new.</p>
+
+<p>Tom speaks. A page open in the browser on his phone carries his voice to OpenAI's speech model and plays the reply. That page holds no credential and knows nothing about him. Separately and at the same time, a new program on the box attaches to the very same conversation over a second connection, watches the running transcript of both speakers, and feeds text into the conversation when it has something to contribute. When a question needs real work, that program starts an ordinary Jarvis agent — a model with the box's full set of tools — and hands back what it finds.</p>
+
+<p>The division is the whole idea, and the next section explains why it is forced rather than chosen. The phone is a mouth and an ear. The box is the mind. They meet inside one conversation held on OpenAI's side.</p>
+
+<nav>
+<p><strong>Contents</strong></p>
+<ol>
+<li><a href="#s-legend">Legend</a></li>
+<li><a href="#s-overview">The whole proposal at a glance</a></li>
+<li><a href="#s-today">What a session is today, and what a voice session changes</a></li>
+<li><a href="#s-two">Why the box has to hold a connection of its own</a></li>
+<li><a href="#s-context">Context engineering: seven layers and one narrow pipe</a></li>
+<li><a href="#s-tiers">Three speeds of answer</a></li>
+<li><a href="#s-walls">What it may do, and the two walls</a></li>
+<li><a href="#s-record">Where it lands in the record</a></li>
+<li><a href="#s-decisions">Decisions for Tom</a></li>
+<li><a href="#s-unchanged">What this leaves unchanged</a></li>
+</ol>
+</nav>
+
+<h2 id="s-today">What a session is today, and what a voice session changes</h2>
+<svg id="today" class="diagram"></svg>
+<p>A session today is a conversation Tom has by typing into a page on tom.quest. It has exactly two durable parts: a row in the record naming it, and a transcript file in a directory on the box that both of the box's two logins share. A reply is one operating-system process running the Claude Code command-line tool: it starts when a message arrives, writes its answer, and exits. Between replies nothing is running. Five sessions never end and have fixed jobs — one takes his dictated facts, one writes his morning briefing, one builds code, one files corrections and failures, one keeps the todo list — and each is defined by a short text file in the Jarvis repository. A program on the box called the session host does the mechanical part: it takes each message the website received, runs one process under the right login, and writes the result back.</p>
+
+<p>A voice session keeps the two durable parts and changes everything about the middle. There is no process that starts and exits per reply, because the conversation is continuous: audio flows both ways without pause and the model itself decides when to talk. There is no message to dispatch, so the existing session host has nothing to do and is not involved. The model is not Claude but a different speech model from a different supplier, which cannot run the box's tools itself. And the conversation happens aloud, in a room, where other people can hear it and speak into it — which is the first time any agent in this system has been addressable by someone who is not Tom.</p>
+
+<p>Those differences are deep enough that this is a new type rather than an existing session with a microphone bolted on. Three properties define it: the conversation is held open by a connection rather than rebuilt per message; the thing Tom talks to and the thing that does the work are two different models in two different places; and strangers can operate it.</p>
+
+<details>
+<summary>The names and files behind this section</summary>
+<p>The existing session host is the program <code>tts-session-host</code>, in the Jarvis repository under <code>worker/session-host/</code>. The five never-ending sessions are defined by one text file each in <code>worker/session-host/persistent/</code>, named dump, briefer, builder, observer and todo. The record keeps seven tables; the two that matter here are the one naming every session and the one holding each session's rows. The transcripts live in a directory shared by both Claude logins and are copied nightly into an object-locked storage bucket that no agent credential can delete from.</p>
+</details>
+
+<h2 id="s-two">Why the box has to hold a connection of its own</h2>
+<svg id="two" class="diagram"></svg>
+<p>This is the structural fact everything else follows from, and it comes from the supplier's documentation rather than from preference.</p>
+
+<p>The speech model is OpenAI's GPT-Live, which takes speech in and emits speech out directly rather than chaining transcription, then a text model, then synthesis. It is full duplex: it can listen and speak at the same time, which is what makes interrupting it work. It is built to hand hard work to a second model, which the documentation calls delegation, and it offers exactly two arrangements. The choice is made when the conversation is created and cannot be changed afterwards; attempting to change it returns an error naming the field as immutable.</p>
+
+<p>The first arrangement lets OpenAI run the second model. Its configuration names a model, gives it instructions, and gives it tools from OpenAI's own catalogue, such as web search. The second, which the documentation calls client delegation, means the speech model announces that it wants help and then waits for whoever is already connected to send an answer back over that same connection.</p>
+
+<p>Two facts make the choice for us. First, the speech model has no tool list of its own at all: the only place tools can be declared is inside the delegation configuration, so there is no way to hand it a function directly. Second, there is no field anywhere in that configuration for a web address, hostname or callback that OpenAI could call. I had both checked against the full schema. This matters because the tools Tom wants the voice to have are on the box: reading the record, searching his files and his past sessions, reading the research cluster, starting a build. OpenAI cannot reach any of it, and the box has no public address to be reached at.</p>
+
+<p>So the box must be the party holding a connection, and the documentation provides exactly the one needed. Besides the connection carrying audio, a conversation accepts a second attachment intended for a server that wants to observe and steer a conversation whose audio it is not carrying. On that attachment a server receives the running transcript of both speakers and may send text in, but may not send audio. That is precisely the shape wanted here.</p>
+
+<p>The finished arrangement therefore has two attachments to one conversation. The phone holds the audio: the page asks a route on tom.quest to create the conversation, because the account credential must never sit in a web page, and OpenAI returns what the browser needs to open a direct audio connection. The box holds the second attachment and through it watches what is said and contributes text. A new program on the box does this, and it wants a plain name describing what it does rather than a coined one: the voice session host.</p>
+
+<p>One alternative deserves recording because it is the only other way the box's tools could be reached, and it is not recommended. The schema does list a tool type for connecting an external tool server to the OpenAI-run backend. If that worked, OpenAI's own model could call the box directly. But the written guide names only two tool types as supported, plain functions and web search, and that external-server type is one of the thirteen the guide omits — so it is listed but undocumented. It would also require giving the box a public address, which it does not have and which is a larger change to Jarvis than this whole proposal. Mentioned so the decision is informed, not revisited.</p>
+
+<details>
+<summary>The exact mechanisms, for an engineer</summary>
+<p>The speech model is <code>gpt-live-1</code>, the only identifier in its family, with a 128,000-token context window and a knowledge cutoff of 31 July 2025. Its page carries no label marking it preview or generally available, so treat its status as undeclared. A conversation is created by a server posting to the live sessions endpoint under the account key, with the browser's connection offer carried inside the JSON body; the reply carries the answer the browser needs. The browser's events travel on a data channel labelled <code>oai-events</code>, created before the offer. Because the browser holds no credential, the configuration offers a permission list restricting which events an untrusted front end may send and receive; omitting it allows everything, so set it explicitly. The box's attachment is a WebSocket to the same session identifier; it may not send audio and may not start the session, but may send the other nine client events, including all three text-append events. Creating a conversation bills fifteen seconds of voice time up front, credited back once it runs — but a conversation created and then abandoned still costs that. Rate limits are counted in concurrent sessions, fifty on the entry paid tier, and the free tier is listed as unsupported.</p>
+</details>
+
+<h2 id="s-context">Context engineering: seven layers and one narrow pipe</h2>
+<svg id="context" class="diagram"></svg>
+<p>This is the part that decides whether the thing is impressive or embarrassing, and it is unusually constrained in a way that turns out to be clarifying.</p>
+
+<p>What the speech model knows arrives in seven layers. Four are set when the conversation is created and then frozen — the documentation states that the instructions given to the speaking model, the model itself, the voice and the startup history are all immutable after startup, and that changing the prompt means starting a new conversation. The other three arrive during the conversation through three events the box may send, each capped at five hundred tokens of plain text, roughly three hundred and fifty words.</p>
+
+<p>The frozen layers are generous in size, which surprised me: the instructions accept up to 16,384 tokens, and a startup history of prior conversation may carry up to 128 messages and 8,192 tokens. So the constraint is not that the voice knows little. It is that everything it knows at the start is decided before the first word and cannot be revised, and that the only channel afterwards is narrow.</p>
+
+<p>The first frozen layer is the persona: who it is and how it takes turns. Turn-taking deserves emphasis because it is the opposite of what an engineer expects. GPT-Live has no setting for interruption sensitivity — none. I had the full configuration searched: there is no threshold, no silence duration, no detection mode, and, stated explicitly in the documentation, no voice-activity detection or noise gate provided for this purpose at all. Turn-taking is controlled entirely by prose, and the documentation supplies a template with three headings to keep, covering how often it should make acknowledging noises, what it should do when interrupted, and when it should hand work to the backend. For a loud room it offers an extra block instructing the model to keep listening through pauses and not to treat a cough, music or a nearby conversation as a request. The behaviour one would expect to tune with numbers is tuned with sentences, and those sentences are part of the context.</p>
+
+<p>The second frozen layer is the ground: what the voice may know about Tom. This is where the privacy problem lives. Jarvis holds private files describing who he is, what he wants and what he knows. None of it may be in the voice's context, because the voice is a loudspeaker in a room containing other people, any of whom can ask it anything. So the ground layer is not those files. It is a separately written, deliberately bounded description holding only what he would be content to have read aloud to a stranger. The third frozen layer applies the same discipline to live data — the date, where he is, what he is dressed as, and a few facts from the record chosen for being harmless. The fourth is the startup history, which is how a new conversation can begin knowing what a previous one covered, and it is text only: prior speech cannot be replayed as audio.</p>
+
+<p>The three live layers are how everything the box learns gets in, and they differ in kind rather than degree. One carries text the model should say aloud, which the documentation warns is paraphrased in the model's own words rather than read out verbatim. One carries facts to know silently and use later if they become relevant, without announcing them on arrival. One carries instructions, and it is the only one that can cut the model off mid-sentence, which the documentation names as the way to stop a model that is saying something it should not.</p>
+
+<p>Five hundred tokens per message is the defining constraint, and it is the right thing to design around rather than against. The box can never pour context into the conversation; it must decide, for every fact, whether that fact is worth three hundred and fifty words of the budget, and whether it should be spoken, known silently, or used to steer. The useful consequence is that the choosing happens on the box, by a model holding the full private context and all the tools, rather than inside the speaking model. The box thinks with everything; the voice is told the conclusion.</p>
+
+<p>One more fact shapes long conversations and is worth knowing before it surprises him. There are no controls over what happens when the context window fills. The documentation says the model summarises older history in the background, and that once usage passes ninety per cent it starts a replacement engine inside the same conversation, handing it the original instructions and up to 8,192 tokens of recent history and summary. No event announces this. The original instructions survive; conversational detail may not. The design consequence is direct: anything that must not be forgotten lives on the box and is re-sent when relevant, never left to survive in the conversation.</p>
+
+<p>That whole structure is also the privacy wall, and this is the part I would most want Tom to agree with. There is no reliable way to filter a model's speech after the fact, and no way to stop someone in a room from asking a question. The only wall that holds is that private content never enters the conversation at all. Since every route in goes through four frozen layers written once and three capped events sent by one program, that program is the wall: a single place, written as a program rather than as an instruction an agent is asked to follow, where what may be said aloud is decided. Nothing private reaching the voice becomes a property of the architecture rather than a hope about a model's discretion.</p>
+
+<details>
+<summary>The seven layers, with where each enters and what it may hold</summary>
+<table>
+<tr><th>Layer</th><th>What it holds</th><th>How it enters</th><th>Changeable?</th><th>Documented size</th></tr>
+<tr><td>Persona and turn-taking</td><td>Who it is; how it interrupts, acknowledges and delegates, written as prose because no setting exists</td><td>Instructions, at creation</td><td>No</td><td rowspan="3">16,384 tokens across all three</td></tr>
+<tr><td>Ground</td><td>A separately written, public-safe description of Tom</td><td>Instructions, at creation</td><td>No</td></tr>
+<tr><td>Opening state</td><td>Date, place, occasion, a few harmless facts from the record</td><td>Instructions, at creation</td><td>No</td></tr>
+<tr><td>Startup history</td><td>What an earlier conversation covered, as text; audio cannot be replayed</td><td>Startup input</td><td>No</td><td>128 messages, 8,192 tokens</td></tr>
+<tr><td>Silent facts</td><td>Results and progress it should know but not announce</td><td>Thinking-append event</td><td>Any time</td><td>500 tokens each</td></tr>
+<tr><td>Spoken results</td><td>Answers it should say aloud, paraphrased in its own words</td><td>Commentary-append event</td><td>Any time</td><td>500 tokens each</td></tr>
+<tr><td>Steering</td><td>Corrections, exact wording, and stopping it mid-sentence</td><td>Instructions-append event</td><td>Any time</td><td>500 tokens each</td></tr>
+</table>
+<p>The window holding all of this is 128,000 tokens and includes audio tokens that never appear in the transcript; the documentation gives no rate at which audio consumes it, so the point at which the replacement engine starts cannot be predicted in advance. A usage event reports the proportion of the window in use, which is the only way to watch it. The box-side agent's own context is a separate matter and is not constrained by any of this: it is an ordinary Jarvis agent with the usual large context, the private files and the tools. These caps govern only what crosses from the box into the spoken conversation.</p>
+</details>
+
+<h2 id="s-tiers">Three speeds of answer</h2>
+<svg id="tiers" class="diagram"></svg>
+<p>A spoken conversation is unforgiving about delay in a way a typed one is not, so the design sorts questions by how long they take and keeps the fast path genuinely fast.</p>
+
+<p>Most questions never leave the speaking model. It already holds the persona, the ground, the opening state and the history, so the date, what he is dressed as, who he is, and anything conversational come back immediately with no other part of the system involved. This is the path that makes it feel alive, and it is why the frozen layers are worth spending care on.</p>
+
+<p>The second speed is a question the box can answer by reading. The speaking model delegates, the box receives the announcement, works out from the transcript what was actually asked, reads the record or searches his files, and sends the answer back as text to be spoken. This takes a second or two. One wrinkle the documentation is explicit about: the announcement that work has been delegated does not contain the question. It carries only an identifier and a timestamp, so the box must assemble the request from the running transcript itself, including short follow-ups such as a correction to something said earlier.</p>
+
+<p>The third speed is real work — starting an ordinary Jarvis agent with the full tool set, which may take a minute or more. Here full duplex pays off, because the conversation does not stop. The box sends silent progress notes as the work proceeds and a spoken result when it lands, and the documentation's own guidance is to instruct the model to acknowledge the request and explicitly not to guess the result while waiting. For work much longer than that, the documentation suggests closing the conversation and starting a new one when the answer is ready, which also stops the per-second charge.</p>
+
+<p>Four cautions, all of them things the documentation either states plainly or conspicuously does not say, and all worth knowing before building rather than after.</p>
+
+<p>The transcript carries no turn boundaries at all. The documentation says fragments do not define complete turns and that no event marks the end of a spoken reply, so grouping speech into turns is the box's problem and will be approximate.</p>
+
+<p>Whether audio already sent to the phone is discarded when Tom interrupts is not documented either way: the words for truncation and interruption do not appear in the GPT-Live documentation, there is no interruption event and no speech-started event, and the guidance points at the client managing its own playback. That reading is mine, not a quoted fact, and it is the first thing to measure with real hardware.</p>
+
+<p>Nothing in the service helps with the acoustics. There is no noise reduction, no echo cancellation, no far-field handling, and the documentation explicitly refuses to provide a noise gate. Everything acoustic belongs to the browser and the hardware. Since full duplex means the model listens while its own voice is coming out of the same speaker, and the documentation does not discuss that interaction at all, the speakerphone's own hardware echo cancellation is carrying the entire design. That is a hardware requirement rather than a preference.</p>
+
+<p>Finally, the supplier's own content filtering can cut the model off. The documentation describes two behaviours: some filter hits end the conversation outright, and others silence the rest of what it was saying and emit only a generic error. So an unexplained mid-sentence stop is a thing that will happen occasionally and should be handled rather than debugged.</p>
+
+<h2 id="s-walls">What it may do, and the two walls</h2>
+<svg id="walls" class="diagram"></svg>
+<p>Jarvis is held together by four promises, two of which this design puts under new pressure. The first is that private things stay private. The second is that only Tom speaks for Tom: nothing reaches another person as him, ships publicly, or spends money without his approval or an automatic check passing.</p>
+
+<p>The new pressure is that a voice session is operated by whoever is within earshot. Every existing agent is driven by Tom, by a program, or by a scheduled job. This one can be addressed by a stranger at a party, who can ask it for facts and ask it to do things. Nothing in the existing design anticipated that.</p>
+
+<p>Two walls answer it, and both are places in a program rather than rules an agent is asked to obey. The first is the list of tools the box-side agent may use, which in this proposal is read-only: it may read the record, search his files, his past sessions and the research cluster, and read the web, and it may not write code, open a change, send a notification, message anybody, or spend anything. The second is the append filter from the previous section, the single point through which anything reaching the spoken conversation must pass.</p>
+
+<p>Money is bounded separately and is simpler than it looks, with one trap. The conversation is billed by wall-clock time at five cents a minute, charged per second without rounding, and the documentation is explicit that active time includes every second in which nobody is talking and every second the backend is working. Muting the microphone does not stop the clock — which matters here, because the prop's on-off switch is a hardware mute button, and pressing it silences the microphone without ending the conversation or the charge. Three dollars an hour is the cost of leaving it open. The box-side work is billed like any other agent on the box. The platform supports a genuine hard spending limit that makes requests fail rather than merely warning, set per project, so this gets its own project, its own key and its own ceiling; the documented gaps are that the limit is monthly rather than daily and that enforcement is not instantaneous, so a little may spill past it. A closing rule on the box, ending a conversation that has gone quiet, is the practical control, and the documentation pushes that work onto the application precisely because no server-side idle timeout exists.</p>
+
+<p>One deliberate omission, at Tom's instruction: the remaining access-control question — whether only his voice should be able to ask for certain things — is left for later rather than designed now, on the grounds that it should not shape the build. The two walls above are in the design because removing them later is easy and adding them later is not.</p>
+
+<h2 id="s-record">Where it lands in the record</h2>
+<svg id="record" class="diagram"></svg>
+<p>The fourth promise Jarvis makes is that Tom can see what ran: every machine change and consequential action appears in the record within minutes, shown where he already reads. A voice session is the first agent whose conversation happens in the air, which makes it the easiest one to lose, so it gets the same treatment as every other session rather than a lesser one.</p>
+
+<p>It gets a row in the record naming it, marked as the voice kind. It gets a transcript file in the same shared directory as every other session's transcript, assembled by the box from the fragments of both speakers — approximately, for the reason given above. That transcript is copied nightly into the object-locked bucket with everything else, so a conversation survives the box. Each delegation the box handles writes a row, so the record shows what was asked and what was done, and anything it starts is visible the way any other agent's work is. On tom.quest it appears in the same session list as the others and reads as a conversation.</p>
+
+<p>Two limits worth stating. The transcript is what the supplier transcribed, which the documentation warns may contain mistakes, and for the model's own speech it is a transcript of what was generated rather than of what came out of the speaker. And a dropped connection cannot be rejoined: every recovery path produces a new conversation, either by continuing from a stored recording or by starting fresh with text history. Since a phone losing its signal is unlikely to close the old conversation cleanly, the practical plan is to keep the transcript on the box and start a new conversation from text — which is the fourth context layer, and the reason it exists.</p>
+
+<p>Keeping the audio is possible but optional. Storage is off by default; switched on, the supplier retains the recording for thirty days and will return it as a two-channel audio file with his voice on one side and the model's on the other, and that stored recording is also what makes continuing an interrupted conversation possible. It is a real decision rather than a detail, because it means a recording of a party exists on someone else's servers, including the voices of people who did not agree to it. See decision six.</p>
+
+<h2 id="s-decisions">Decisions for Tom</h2>
+<p>Six, in the order they constrain each other. The first cannot be changed later without rebuilding; the rest can.</p>
+<ol>
+<li><strong>Client delegation, so the box is the mind.</strong> The alternative is letting OpenAI run the second model, which is less work and brings web search immediately, but it cannot reach the record, his files, the cluster or a build, because no part of the configuration can name an address on the box and the speaking model has no tool list of its own. Taking the box-side route is what makes this a Jarvis agent rather than a clever toy, and it is why the two-connection design exists. The mode is fixed when a conversation is created. Recommended: client delegation.</li>
+<li><strong>Read-only at first, with one proposed exception.</strong> The voice may read everything the box can read and write nothing. The exception worth considering is the writing that is already safe and already exists as single-purpose routes: logging one of his day facts — a meal, a weight, a training session, something he did — and adding a todo. Both are trivially correctable and would make the thing useful rather than only impressive. Anything that spends, sends, or changes code stays out. Recommended: read-only plus day facts and todos.</li>
+<li><strong>Anyone in earshot may speak to it.</strong> The alternative is requiring a phrase or recognising his voice before it answers. Since the public-safe ground layer is what actually protects him, and a costume that ignores the person talking to it is a worse costume, recommended: anyone, with the context as the wall.</li>
+<li><strong>A closing rule, because the clock runs through silence and through mute.</strong> Three dollars an hour accrues whether or not anyone speaks, and pressing the prop's mute button does not stop it. For everyday use the box should close a conversation that has gone quiet and open a new one on demand, carrying the text history across. For one evening in a costume, leaving it open is simpler and the whole night costs less than a cinema ticket. Recommended: a closing rule for ordinary use, suspended for the costume.</li>
+<li><strong>It is a full session in the record, not a lesser thing.</strong> A row, a transcript, rows for what it did, and a place in the session list, exactly as a typed session has. The alternative is treating it as a transient toy that leaves no trace, which would make it the first agent in the system he could not look back at. Recommended: a full session.</li>
+<li><strong>Do not store the audio.</strong> Storing it gives two things: a recording he could listen back to, and the ability to continue a conversation that dropped mid-sentence rather than restarting it from text. It costs a thirty-day recording of whatever room he was in, held on someone else's servers, containing people who did not agree to be recorded. The text transcript on the box already covers remembering what was said, and restarting from text is adequate. Recommended: storage off, which also means the continuation path is the text one.</li>
+</ol>
+
+<h2 id="s-unchanged">What this leaves unchanged</h2>
+<p>Nothing about the five never-ending sessions changes: they keep their text files, their logins and their jobs. The existing session host is not modified and not involved, because a voice conversation has no per-message process for it to run; the new program sits beside it. No existing table in the record changes shape; a voice session uses the session table and the transcript directory exactly as a typed session does. The merge gate, the one path by which code reaches the main branch after its checks and audit pass, is untouched and still the only way anything lands — and the voice cannot land code, because in this proposal it cannot write at all. The nightly copy to the locked bucket needs no change to cover the new transcripts, since it already copies the directory they live in. The delegate, the agent that decides in Tom's stead when he is away, is not involved: a voice session exists only while he is talking to it, so he is present by definition. The other agents' models, prompts and costs are untouched. And nothing here changes the hardware decisions already settled for the prop, except to make one of them load-bearing: the speakerphone's own echo cancellation is now the only thing standing between full duplex and a model that interrupts itself, because the service provides no acoustic help of any kind.</p>
+<script>
+// Every drawing on this page is data: a list of nodes and a list of edges, drawn by drawGraph below, or a
+// list of lanes drawn by drawTimeline. Edit the data and reload; nothing else changes.
+//
+// A node: id, label lines, x, y, w, h (diagram units), kind, and optional fate.
+//   kind: person, page, program, agent, store, external, wall, document, state, region, point.
+//   fate (a drawing of a design only): "replaced", "removed" or "proposed"; a kept part has none.
+// An edge: from, to (node ids), label ("" for none), and kind: send (default), start, read, deny.
+// drawGraph returns every arrow that passes through a box it does not connect; the loop at the end reports them.
+
+function drawGraph(svgId, nodes, edges) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.getElementById(svgId);
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const pad = 16;
+  const width = Math.max(...nodes.map((n) => n.x + n.w)) + pad;
+  const height = Math.max(...nodes.map((n) => n.y + n.h)) + pad;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("role", "img");
+  svg.style.maxWidth = `${width}px`; // shrinks to fit the page, never grows past one pixel per unit
+
+  function add(tag, attrs, style) {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    Object.assign(node.style, style);
+    svg.appendChild(node);
+    return node;
+  }
+  const centre = (n) => [n.x + n.w / 2, n.y + n.h / 2];
+
+  // Regions first: a frame with its name at the top left, behind everything else.
+  for (const n of nodes.filter((n) => n.kind === "region")) {
+    add("rect", { x: n.x, y: n.y, width: n.w, height: n.h, rx: 10, ry: 10 }, {
+      fill: "var(--node-region-fill)", stroke: "var(--node-region-stroke)", strokeWidth: "1.2", strokeDasharray: "6 4",
+    });
+    const t = add("text", { x: n.x + 12, y: n.y + 6, "dominant-baseline": "hanging" }, {
+      fill: "var(--muted)", fontSize: "13px", fontWeight: "600", letterSpacing: "0.04em",
+    });
+    t.textContent = n.label[0].toUpperCase();
+  }
+  const boxes = nodes.filter((n) => n.kind !== "region");
+
+  // Where the line from the box centre toward (tx, ty) meets the drawn border. Each shape has an inside test
+  // matching what the shape code below draws; every shape is star-shaped from its centre, so along the ray the
+  // test changes once, and a binary search on the distance finds the border.
+  const RADIUS = 8;
+  const STORE_RY = 7; // the cylinder's end ellipses, as drawn
+  const WALL_CUT = 12; // the octagon's corner cut, as drawn
+  const DOC_FOLD = 12; // the document's folded corner, as drawn
+  function insideRoundedRect(n, px, py, r) {
+    const [cx, cy] = centre(n);
+    const ax = Math.abs(px - cx), ay = Math.abs(py - cy);
+    const hw = n.w / 2, hh = n.h / 2;
+    if (ax > hw || ay > hh) return false;
+    if (ax <= hw - r || ay <= hh - r) return true;
+    return (ax - (hw - r)) ** 2 + (ay - (hh - r)) ** 2 <= r * r;
+  }
+  function inside(n, px, py) {
+    const [cx, cy] = centre(n);
+    const hw = n.w / 2, hh = n.h / 2;
+    const inRect = Math.abs(px - cx) <= hw && Math.abs(py - cy) <= hh;
+    if (n.kind === "person") return ((px - cx) / hw) ** 2 + ((py - cy) / hh) ** 2 <= 1;
+    if (n.kind === "state") return insideRoundedRect(n, px, py, Math.min(hw, hh));
+    if (n.kind === "store") {
+      const ry = STORE_RY;
+      const inEnd = (ey) => ((px - cx) / hw) ** 2 + ((py - ey) / ry) ** 2 <= 1;
+      const inCore = Math.abs(px - cx) <= hw && py >= n.y + ry && py <= n.y + n.h - ry;
+      return inCore || inEnd(n.y + ry) || inEnd(n.y + n.h - ry);
+    }
+    if (n.kind === "wall") return inRect && Math.abs(px - cx) + Math.abs(py - cy) <= hw + hh - WALL_CUT;
+    if (n.kind === "document") {
+      if (!inRect) return false;
+      const fx = px - (n.x + n.w - DOC_FOLD), fy = py - n.y;
+      return !(fx > 0 && fy < DOC_FOLD && fx > fy);
+    }
+    return insideRoundedRect(n, px, py, RADIUS);
+  }
+  function exitPoint(n, tx, ty) {
+    const [cx, cy] = centre(n);
+    if (n.kind === "point") return [cx, cy];
+    const dx = tx - cx;
+    const dy = ty - cy;
+    const len = Math.hypot(dx, dy);
+    if (len === 0) return [cx, cy];
+    const ux = dx / len, uy = dy / len;
+    let lo = 0, hi = n.w / 2 + n.h / 2; // the centre is inside; this distance is outside every shape
+    for (let k = 0; k < 40; k++) {
+      const mid = (lo + hi) / 2;
+      if (inside(n, cx + ux * mid, cy + uy * mid)) lo = mid; else hi = mid;
+    }
+    return [cx + ux * lo, cy + uy * lo];
+  }
+
+  // True when the arrow from (x1, y1) to (x2, y2) passes through node n: points every half unit along the
+  // whole segment, from one end point to the other, are tested with the same inside test the arrows' ends
+  // use, so the check and the drawing share one geometry. A clip shorter than half a unit is under one pixel
+  // on screen at the largest the page draws, so half a unit is the check's resolution.
+  function crosses(x1, y1, x2, y2, n) {
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    if (len === 0) return false;
+    const steps = Math.ceil(len / 0.5);
+    for (let k = 0; k <= steps; k++) {
+      const t = Math.min(k * 0.5, len) / len;
+      if (inside(n, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)) return true;
+    }
+    return false;
+  }
+  const crossings = [];
+
+  // Arrows next, so every box is drawn over them and no arrow crosses text.
+  const HEAD_LENGTH = 11;
+  const HEAD_HALF_WIDTH = 5.5;
+  const DASH = { send: "", start: "8 5", read: "2 5", deny: "" };
+  for (const e of edges) {
+    const from = byId[e.from];
+    const to = byId[e.to];
+    const kind = e.kind || "send";
+    const colour = kind === "deny" ? "var(--deny)" : "var(--diagram-line)";
+    const [x1, y1] = exitPoint(from, ...centre(to));
+    const [x2, y2] = exitPoint(to, ...centre(from));
+    for (const n of boxes) {
+      if (n === from || n === to || n.kind === "point") continue;
+      if (crosses(x1, y1, x2, y2, n)) crossings.push(`${svgId}: the arrow ${e.from} to ${e.to} passes through ${n.id}`);
+    }
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const bx = x2 - HEAD_LENGTH * cos; // the middle of the arrowhead's base
+    const by = y2 - HEAD_LENGTH * sin;
+    add("line", { x1, y1, x2: bx, y2: by }, { stroke: colour, strokeWidth: kind === "deny" ? "2" : "1.6", strokeDasharray: DASH[kind] });
+    const head = [
+      [x2, y2],
+      [bx + HEAD_HALF_WIDTH * sin, by - HEAD_HALF_WIDTH * cos],
+      [bx - HEAD_HALF_WIDTH * sin, by + HEAD_HALF_WIDTH * cos],
+    ];
+    add("polygon", { points: head.map((p) => p.join(",")).join(" ") }, { fill: colour });
+    if (kind === "deny") {
+      // A short bar across the line just behind the head: the arrow can be stopped.
+      const gx = bx - 6 * cos, gy = by - 6 * sin;
+      add("line", { x1: gx + 7 * sin, y1: gy - 7 * cos, x2: gx - 7 * sin, y2: gy + 7 * cos }, { stroke: colour, strokeWidth: "2.5" });
+    }
+    if (e.label) {
+      // Beside the line, on its upper side, so the label never sits on the line.
+      let nx = -sin;
+      let ny = cos;
+      if (ny > 0 || (ny === 0 && nx > 0)) { nx = -nx; ny = -ny; }
+      const anchor = Math.abs(nx) < 0.3 ? "middle" : nx < 0 ? "end" : "start";
+      const t = add("text", {
+        x: (x1 + x2) / 2 + nx * 10, y: (y1 + y2) / 2 + ny * 10,
+        "text-anchor": anchor, "dominant-baseline": ny < -0.9 ? "auto" : "middle",
+      }, {
+        fill: "var(--diagram-edge-text)", fontSize: "13px", paintOrder: "stroke",
+        stroke: "var(--page-bg)", strokeWidth: "5px", strokeLinejoin: "round",
+      });
+      t.textContent = e.label;
+    }
+  }
+
+  // Shapes after the arrows. One shape per kind, the same everywhere on the page.
+  const LINE_HEIGHT = 18;
+  for (const n of boxes) {
+    if (n.kind === "point") continue;
+    const fill = `var(--node-${n.kind}-fill)`;
+    const stroke = n.fate === "replaced" ? "var(--replaced)" : n.fate === "removed" ? "var(--muted)" : n.fate === "proposed" ? "var(--proposed)" : `var(--node-${n.kind}-stroke)`;
+    const style = { fill, stroke, strokeWidth: "1.4" };
+    if (n.fate) style.strokeDasharray = "5 4";
+    if (n.fate === "removed") style.opacity = "0.6";
+    const { x, y, w, h } = n;
+    if (n.kind === "person") {
+      add("ellipse", { cx: x + w / 2, cy: y + h / 2, rx: w / 2, ry: h / 2 }, style);
+    } else if (n.kind === "store") {
+      // A cylinder: the database shape.
+      const ry = STORE_RY;
+      add("path", { d: `M${x},${y + ry} a${w / 2},${ry} 0 0 1 ${w},0 v${h - 2 * ry} a${w / 2},${ry} 0 0 1 -${w},0 z` }, style);
+      add("path", { d: `M${x},${y + ry} a${w / 2},${ry} 0 0 0 ${w},0` }, { ...style, fill: "none" });
+    } else if (n.kind === "wall") {
+      // An octagon: the stop shape.
+      const c = WALL_CUT;
+      const pts = [[x + c, y], [x + w - c, y], [x + w, y + c], [x + w, y + h - c], [x + w - c, y + h], [x + c, y + h], [x, y + h - c], [x, y + c]];
+      add("polygon", { points: pts.map((p) => p.join(",")).join(" ") }, style);
+    } else if (n.kind === "document") {
+      // A sheet with a folded top-right corner.
+      const f = DOC_FOLD;
+      add("path", { d: `M${x},${y} h${w - f} l${f},${f} v${h - f} h-${w} z` }, style);
+      add("path", { d: `M${x + w - f},${y} v${f} h${f}` }, { ...style, fill: "none", strokeWidth: "1.2" });
+    } else if (n.kind === "state") {
+      add("rect", { x, y, width: w, height: h, rx: h / 2, ry: h / 2 }, style);
+    } else if (n.kind === "external") {
+      add("rect", { x, y, width: w, height: h, rx: RADIUS, ry: RADIUS }, { ...style, strokeDasharray: "5 4" });
+    } else {
+      add("rect", { x, y, width: w, height: h, rx: RADIUS, ry: RADIUS }, style);
+      if (n.kind === "agent") {
+        add("rect", { x: x + 4, y: y + 4, width: w - 8, height: h - 8, rx: RADIUS - 3, ry: RADIUS - 3 }, { ...style, fill: "none", strokeWidth: "1.2" });
+      }
+      if (n.kind === "page") {
+        // A browser window: a bar along the top.
+        add("path", { d: `M${x},${y + 11} v-${11 - RADIUS} a${RADIUS},${RADIUS} 0 0 1 ${RADIUS},-${RADIUS} h${w - 2 * RADIUS} a${RADIUS},${RADIUS} 0 0 1 ${RADIUS},${RADIUS} v${11 - RADIUS} z` }, { fill: stroke, opacity: "0.55" });
+      }
+    }
+    if (n.fate === "removed") {
+      add("line", { x1: x + 6, y1: y + h - 6, x2: x + w - 6, y2: y + 6 }, { stroke: "var(--muted)", strokeWidth: "1.6" });
+    }
+    const [cx, cy] = centre(n);
+    const offset = n.kind === "page" ? 5 : n.kind === "store" ? 4 : 0;
+    const top = cy + offset - ((n.label.length - 1) * LINE_HEIGHT) / 2;
+    n.label.forEach((line, i) => {
+      const t = add("text", { x: cx, y: top + i * LINE_HEIGHT, "text-anchor": "middle", "dominant-baseline": "middle" }, {
+        fill: "var(--diagram-text)", fontSize: i === 0 ? "15px" : "13px", fontWeight: i === 0 ? "600" : "400",
+      });
+      t.textContent = line;
+    });
+  }
+  return crossings;
+}
+
+// A timeline: one lane per row, hours across. A lane has a name and either { every: text } drawn as a band,
+// or { at: [hour, ...], when: text } drawn as markers. Hours are New York time.
+function drawTimeline(svgId, lanes) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.getElementById(svgId);
+  const left = 330, right = 1380, top = 30, rowH = 26;
+  const height = top + lanes.length * rowH + 30;
+  svg.setAttribute("viewBox", `0 0 ${right + 20} ${height}`);
+  svg.setAttribute("role", "img");
+  svg.style.maxWidth = `${right + 20}px`;
+  function add(tag, attrs, style) {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    Object.assign(node.style, style);
+    svg.appendChild(node);
+    return node;
+  }
+  const xOf = (hour) => left + ((right - left) * hour) / 24;
+  for (let h = 0; h <= 24; h += 2) {
+    add("line", { x1: xOf(h), y1: top - 6, x2: xOf(h), y2: height - 24 }, { stroke: "var(--rule)", strokeWidth: "1" });
+    const t = add("text", { x: xOf(h), y: top - 12, "text-anchor": "middle" }, { fill: "var(--muted)", fontSize: "12px" });
+    t.textContent = `${String(h % 24).padStart(2, "0")}:00`;
+  }
+  lanes.forEach((lane, i) => {
+    const y = top + i * rowH;
+    const t = add("text", { x: left - 10, y: y + rowH / 2, "text-anchor": "end", "dominant-baseline": "middle" }, { fill: "var(--diagram-text)", fontSize: "13px" });
+    t.textContent = lane.name;
+    const colour = lane.colour || "var(--node-program-stroke)";
+    if (lane.every) {
+      add("rect", { x: left, y: y + 6, width: right - left, height: rowH - 12, rx: 4 }, { fill: colour, opacity: "0.25" });
+      const l = add("text", { x: left + 8, y: y + rowH / 2, "dominant-baseline": "middle" }, { fill: "var(--diagram-text)", fontSize: "12px" });
+      l.textContent = lane.every;
+    }
+    if (lane.at) {
+      for (const hour of lane.at) {
+        add("rect", { x: xOf(hour) - 4, y: y + 5, width: 8, height: rowH - 10, rx: 2 }, { fill: colour });
+      }
+      const l = add("text", { x: xOf(lane.at[lane.at.length - 1]) + 10, y: y + rowH / 2, "dominant-baseline": "middle" }, { fill: "var(--diagram-text)", fontSize: "12px" });
+      l.textContent = lane.when;
+    }
+  });
+}
+
+const DIAGRAMS = [
+  // The legend: the same on every explainer; copied unchanged.
+  {
+    svg: "legend",
+    nodes: [
+      { id: "l1", label: ["Tom"], x: 16, y: 16, w: 140, h: 56, kind: "person" },
+      { id: "l2", label: ["A page", "on tom.quest"], x: 171, y: 16, w: 140, h: 56, kind: "page" },
+      { id: "l3", label: ["A program", "on the box"], x: 326, y: 16, w: 140, h: 56, kind: "program" },
+      { id: "l4", label: ["An agent", "a model at work"], x: 481, y: 16, w: 140, h: 56, kind: "agent" },
+      { id: "l5", label: ["A store", "data at rest"], x: 636, y: 16, w: 140, h: 56, kind: "store" },
+      { id: "l6", label: ["Outside party"], x: 791, y: 16, w: 140, h: 56, kind: "external" },
+      { id: "l7", label: ["A wall", "can refuse"], x: 946, y: 16, w: 140, h: 56, kind: "wall" },
+      { id: "l8", label: ["A record row", "or document"], x: 1101, y: 16, w: 140, h: 56, kind: "document" },
+      { id: "l9", label: ["A state"], x: 1256, y: 16, w: 140, h: 56, kind: "state" },
+      { id: "p1a", label: [""], x: 30, y: 128, w: 2, h: 2, kind: "point" },
+      { id: "p1b", label: [""], x: 230, y: 128, w: 2, h: 2, kind: "point" },
+      { id: "p2a", label: [""], x: 330, y: 128, w: 2, h: 2, kind: "point" },
+      { id: "p2b", label: [""], x: 530, y: 128, w: 2, h: 2, kind: "point" },
+      { id: "p3a", label: [""], x: 630, y: 128, w: 2, h: 2, kind: "point" },
+      { id: "p3b", label: [""], x: 830, y: 128, w: 2, h: 2, kind: "point" },
+      { id: "p4a", label: [""], x: 930, y: 128, w: 2, h: 2, kind: "point" },
+      { id: "p4b", label: [""], x: 1130, y: 128, w: 2, h: 2, kind: "point" },
+      { id: "lr", label: ["A group of parts"], x: 1180, y: 100, w: 216, h: 50, kind: "region" },
+      { id: "f1", label: ["Kept"], x: 16, y: 180, w: 170, h: 56, kind: "program" },
+      { id: "f2", label: ["Replaced", "→ what replaces it"], x: 201, y: 180, w: 170, h: 56, kind: "program", fate: "replaced" },
+      { id: "f3", label: ["Removed"], x: 386, y: 180, w: 170, h: 56, kind: "program", fate: "removed" },
+      { id: "f4", label: ["Proposed"], x: 571, y: 180, w: 170, h: 56, kind: "program", fate: "proposed" },
+    ],
+    edges: [
+      { from: "p1a", to: "p1b", label: "sends or writes", kind: "send" },
+      { from: "p2a", to: "p2b", label: "starts", kind: "start" },
+      { from: "p3a", to: "p3b", label: "reads", kind: "read" },
+      { from: "p4a", to: "p4b", label: "can refuse", kind: "deny" },
+    ],
+  },
+
+  // The whole proposal.
+  {
+    svg: "overview",
+    nodes: [
+      { id: "rReactor", label: ["the prop on his chest"], x: 210, y: 140, w: 260, h: 180, kind: "region" },
+      { id: "rBox", label: ["the box"], x: 840, y: 60, w: 540, h: 400, kind: "region" },
+      { id: "tom", label: ["Tom"], x: 30, y: 200, w: 150, h: 56, kind: "person" },
+      { id: "page", label: ["The voice page", "no credential"], x: 240, y: 210, w: 200, h: 60, kind: "page", fate: "proposed" },
+      { id: "openai", label: ["The speech model", "held open"], x: 560, y: 210, w: 200, h: 60, kind: "external" },
+      { id: "route", label: ["A route on tom.quest", "holds the key"], x: 540, y: 70, w: 240, h: 60, kind: "program", fate: "proposed" },
+      { id: "vhost", label: ["The voice", "session host"], x: 880, y: 210, w: 200, h: 60, kind: "program", fate: "proposed" },
+      { id: "agent", label: ["A Jarvis agent", "all the tools"], x: 1140, y: 210, w: 200, h: 60, kind: "agent", fate: "proposed" },
+      { id: "record", label: ["The record"], x: 1140, y: 350, w: 200, h: 70, kind: "store" },
+    ],
+    edges: [
+      { from: "tom", to: "page", label: "speaks" },
+      { from: "page", to: "route", label: "offer" },
+      { from: "route", to: "openai", label: "creates it" },
+      { from: "page", to: "openai", label: "audio, both ways" },
+      { from: "vhost", to: "openai", label: "attaches, appends text" },
+      { from: "vhost", to: "agent", label: "starts", kind: "start" },
+      { from: "agent", to: "record", label: "reads", kind: "read" },
+      { from: "vhost", to: "record", label: "writes" },
+    ],
+  },
+
+  // Typed session today, beside a voice session.
+  {
+    svg: "today",
+    nodes: [
+      { id: "rOld", label: ["a typed session today"], x: 30, y: 20, w: 560, h: 320, kind: "region" },
+      { id: "rNew", label: ["a voice session"], x: 650, y: 20, w: 640, h: 320, kind: "region" },
+      { id: "tom", label: ["Tom"], x: 70, y: 60, w: 150, h: 56, kind: "person" },
+      { id: "pageOld", label: ["The composer", "on tom.quest"], x: 280, y: 50, w: 260, h: 60, kind: "page" },
+      { id: "hostOld", label: ["The session host"], x: 280, y: 150, w: 260, h: 60, kind: "program" },
+      { id: "reply", label: ["One Claude process", "answers, then exits"], x: 280, y: 250, w: 260, h: 60, kind: "agent" },
+      { id: "tom2", label: ["Tom"], x: 690, y: 60, w: 150, h: 56, kind: "person" },
+      { id: "pageNew", label: ["The voice page", "audio only"], x: 900, y: 50, w: 330, h: 60, kind: "page", fate: "proposed" },
+      { id: "openai", label: ["The speech model", "full duplex, held open"], x: 900, y: 150, w: 330, h: 60, kind: "external" },
+      { id: "vhost", label: ["The voice session host", "attached, never exits"], x: 900, y: 250, w: 330, h: 60, kind: "program", fate: "proposed" },
+    ],
+    edges: [
+      { from: "tom", to: "pageOld", label: "types" },
+      { from: "pageOld", to: "hostOld", label: "one message" },
+      { from: "hostOld", to: "reply", label: "starts", kind: "start" },
+      { from: "tom2", to: "pageNew", label: "speaks" },
+      { from: "pageNew", to: "openai", label: "audio, both ways" },
+      { from: "vhost", to: "openai", label: "attaches, sends text" },
+    ],
+  },
+
+  // The two attachments.
+  {
+    svg: "two",
+    nodes: [
+      { id: "tom", label: ["Tom"], x: 90, y: 170, w: 150, h: 56, kind: "person" },
+      { id: "page", label: ["The voice page", "on his phone"], x: 90, y: 50, w: 260, h: 60, kind: "page", fate: "proposed" },
+      { id: "route", label: ["A route on tom.quest", "holds the key"], x: 560, y: 40, w: 300, h: 60, kind: "program", fate: "proposed" },
+      { id: "openai", label: ["One conversation", "on OpenAI's side"], x: 560, y: 150, w: 300, h: 76, kind: "external" },
+      { id: "vhost", label: ["The voice session host", "the second attachment"], x: 90, y: 300, w: 260, h: 60, kind: "program", fate: "proposed" },
+      { id: "agent", label: ["A Jarvis agent", "all the tools"], x: 90, y: 430, w: 260, h: 60, kind: "agent", fate: "proposed" },
+      { id: "record", label: ["The record", "and his files"], x: 560, y: 420, w: 240, h: 70, kind: "store" },
+    ],
+    edges: [
+      { from: "tom", to: "page", label: "speaks" },
+      { from: "page", to: "route", label: "connection offer" },
+      { from: "route", to: "openai", label: "creates it" },
+      { from: "page", to: "openai", label: "audio, both ways" },
+      { from: "vhost", to: "openai", label: "transcript in, text out" },
+      { from: "vhost", to: "agent", label: "starts", kind: "start" },
+      { from: "agent", to: "record", label: "reads", kind: "read" },
+      { from: "vhost", to: "record", label: "writes the transcript" },
+    ],
+  },
+
+  // The seven context layers.
+  {
+    svg: "context",
+    nodes: [
+      { id: "rFrozen", label: ["frozen when the conversation opens"], x: 40, y: 20, w: 520, h: 270, kind: "region" },
+      { id: "rLive", label: ["arrives during it, 500 tokens at a time"], x: 40, y: 320, w: 520, h: 220, kind: "region" },
+      { id: "n1", label: ["1. Persona and turn-taking"], x: 70, y: 55, w: 460, h: 48, kind: "document" },
+      { id: "n2", label: ["2. Ground: what it may know of him"], x: 70, y: 113, w: 460, h: 48, kind: "document" },
+      { id: "n3", label: ["3. Opening state: date, place, occasion"], x: 70, y: 171, w: 460, h: 48, kind: "document" },
+      { id: "n4", label: ["4. Startup history, as text"], x: 70, y: 229, w: 460, h: 48, kind: "document" },
+      { id: "n5", label: ["5. Silent facts, not announced"], x: 70, y: 355, w: 460, h: 48, kind: "document" },
+      { id: "n6", label: ["6. Spoken results, paraphrased"], x: 70, y: 413, w: 460, h: 48, kind: "document" },
+      { id: "n7", label: ["7. Steering, can cut it off"], x: 70, y: 471, w: 460, h: 48, kind: "document" },
+      { id: "assembly", label: ["The voice session host", "chooses what crosses"], x: 680, y: 300, w: 260, h: 60, kind: "program", fate: "proposed" },
+      { id: "filter", label: ["The append filter"], x: 680, y: 413, w: 260, h: 48, kind: "wall", fate: "proposed" },
+      { id: "recordS", label: ["The record"], x: 1060, y: 290, w: 240, h: 70, kind: "store" },
+      { id: "privS", label: ["His private files"], x: 1060, y: 420, w: 240, h: 70, kind: "store" },
+    ],
+    edges: [
+      { from: "assembly", to: "filter", label: "" },
+      { from: "filter", to: "n5", label: "" },
+      { from: "filter", to: "n6", label: "" },
+      { from: "filter", to: "n7", label: "" },
+      { from: "assembly", to: "recordS", label: "reads", kind: "read" },
+      { from: "assembly", to: "privS", label: "reads", kind: "read" },
+    ],
+  },
+
+  // Three speeds of answer.
+  {
+    svg: "tiers",
+    nodes: [
+      { id: "tom", label: ["Tom"], x: 40, y: 200, w: 150, h: 56, kind: "person" },
+      { id: "voice", label: ["The speech model"], x: 230, y: 190, w: 240, h: 72, kind: "external" },
+      { id: "t1", label: ["Under a second, nothing else involved"], x: 560, y: 50, w: 340, h: 44, kind: "state" },
+      { id: "vhost", label: ["The voice", "session host"], x: 560, y: 196, w: 240, h: 60, kind: "program", fate: "proposed" },
+      { id: "t2", label: ["A second or two: a read"], x: 880, y: 200, w: 320, h: 44, kind: "state" },
+      { id: "worker", label: ["A Jarvis agent", "all the tools"], x: 560, y: 340, w: 240, h: 60, kind: "agent", fate: "proposed" },
+      { id: "t3", label: ["A minute or more: real work"], x: 880, y: 348, w: 320, h: 44, kind: "state" },
+    ],
+    edges: [
+      { from: "tom", to: "voice", label: "speaks" },
+      { from: "voice", to: "t1", label: "most questions" },
+      { from: "voice", to: "vhost", label: "delegates" },
+      { from: "vhost", to: "t2", label: "" },
+      { from: "vhost", to: "worker", label: "starts", kind: "start" },
+      { from: "worker", to: "t3", label: "" },
+    ],
+  },
+
+  // The two walls.
+  {
+    svg: "walls",
+    nodes: [
+      { id: "agent", label: ["The box-side agent"], x: 80, y: 180, w: 220, h: 60, kind: "agent", fate: "proposed" },
+      { id: "wallTools", label: ["The tool list", "read-only"], x: 430, y: 176, w: 220, h: 68, kind: "wall", fate: "proposed" },
+      { id: "record", label: ["The record", "his files, the cluster"], x: 700, y: 80, w: 220, h: 70, kind: "store" },
+      { id: "priv", label: ["Any write", "code, messages, money"], x: 720, y: 280, w: 260, h: 70, kind: "document" },
+      { id: "wallAppend", label: ["The append filter"], x: 430, y: 420, w: 220, h: 68, kind: "wall", fate: "proposed" },
+      { id: "openai", label: ["The conversation", "heard by the room"], x: 80, y: 424, w: 220, h: 60, kind: "external" },
+      { id: "transcripts", label: ["The transcript", "on the box"], x: 700, y: 420, w: 240, h: 70, kind: "store" },
+    ],
+    edges: [
+      { from: "agent", to: "wallTools", label: "tool call" },
+      { from: "wallTools", to: "record", label: "reads", kind: "read" },
+      { from: "wallTools", to: "priv", label: "refuses", kind: "deny" },
+      { from: "agent", to: "wallAppend", label: "text for the voice" },
+      { from: "wallAppend", to: "openai", label: "appends" },
+      { from: "agent", to: "transcripts", label: "writes" },
+    ],
+  },
+
+  // What lands in the record.
+  {
+    svg: "record",
+    nodes: [
+      { id: "vhost", label: ["The voice", "session host"], x: 60, y: 150, w: 240, h: 60, kind: "program", fate: "proposed" },
+      { id: "row", label: ["A session row", "kind: voice"], x: 380, y: 40, w: 240, h: 60, kind: "document", fate: "proposed" },
+      { id: "transcript", label: ["The transcript", "both speakers"], x: 380, y: 150, w: 240, h: 70, kind: "store" },
+      { id: "rows", label: ["A row per delegation"], x: 380, y: 280, w: 240, h: 60, kind: "document", fate: "proposed" },
+      { id: "record", label: ["The record"], x: 740, y: 130, w: 220, h: 100, kind: "store" },
+      { id: "bucket", label: ["The locked bucket", "copied nightly"], x: 740, y: 380, w: 260, h: 70, kind: "store" },
+      { id: "page", label: ["The sessions page", "on tom.quest"], x: 1100, y: 130, w: 240, h: 60, kind: "page" },
+      { id: "tom", label: ["Tom"], x: 1100, y: 250, w: 180, h: 56, kind: "person" },
+    ],
+    edges: [
+      { from: "vhost", to: "row", label: "writes" },
+      { from: "vhost", to: "transcript", label: "writes" },
+      { from: "vhost", to: "rows", label: "writes" },
+      { from: "row", to: "record", label: "" },
+      { from: "transcript", to: "record", label: "" },
+      { from: "rows", to: "record", label: "" },
+      { from: "transcript", to: "bucket", label: "nightly" },
+      { from: "page", to: "record", label: "reads", kind: "read" },
+      { from: "tom", to: "page", label: "reads", kind: "read" },
+    ],
+  },
+];
+
+const TIMELINES = [];
+// The check before the page is shown: every arrow that passes through a box it does not connect is a console
+// error, which tts-browse prints on its console line, and a warning at the top of the page.
+const crossings = [];
+for (const d of DIAGRAMS) crossings.push(...drawGraph(d.svg, d.nodes, d.edges));
+for (const t of TIMELINES) drawTimeline(t.svg, t.lanes);
+if (crossings.length) {
+  for (const c of crossings) console.error(`arrow crossing: ${c}`);
+  const warning = document.createElement("p");
+  warning.className = "check-warning";
+  warning.textContent = `Arrows pass through boxes they do not connect: ${crossings.join("; ")}.`;
+  document.body.prepend(warning);
+}
+</script>
+</body>
+</html>
