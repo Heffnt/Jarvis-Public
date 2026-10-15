@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Making vqc/ the home of the merge gate's tests</title>
+<style>
+:root{color-scheme:light dark;
+--page-bg:#fbfaf7;--page-text:#1d1d1b;--muted:#5b5b57;--rule:#d9d6cf;
+--diagram-line:#55534e;--diagram-text:#1d1d1b;--diagram-edge-text:#45433f;
+--deny:#b3402e;--replaced:#a27a3c;--proposed:#3a6fc4;
+--node-program-fill:#e8f0fb;--node-program-stroke:#4a72b0;
+--node-agent-fill:#e4ecf8;--node-agent-stroke:#2f5597;
+--node-page-fill:#efe9f6;--node-page-stroke:#7a56a0;
+--node-store-fill:#eaf5ec;--node-store-stroke:#4a8a5a;
+--node-external-fill:#f6eee2;--node-external-stroke:#a27a3c;
+--node-wall-fill:#fbe9e5;--node-wall-stroke:#b3402e;
+--node-document-fill:#f7f4ea;--node-document-stroke:#8a7a3c;
+--node-state-fill:#ecebe7;--node-state-stroke:#6b6965;
+--node-person-fill:#f3e9f5;--node-person-stroke:#8a5a96;
+--node-region-fill:transparent;--node-region-stroke:#b5b2aa;
+--use-unverified:#ecebe7;--use-run:#e8f0fb;--use-in-use:#f6eee2;--use-working:#e2f3e6;--use-issue:#fbe9e5;
+--code-bg:#f1efe9;--details-bg:#f3f1ec;--link:#2f5597;}
+@media (prefers-color-scheme:dark){:root{
+--page-bg:#17181a;--page-text:#e8e6e1;--muted:#a9a6a0;--rule:#3a3b3e;
+--diagram-line:#b9b6af;--diagram-text:#ecebe7;--diagram-edge-text:#cfccc5;
+--deny:#e07a66;--replaced:#d1a462;--proposed:#86aef0;
+--node-program-fill:#1d2a3d;--node-program-stroke:#7fa3dc;
+--node-agent-fill:#1a2640;--node-agent-stroke:#9ab8e8;
+--node-page-fill:#2a2236;--node-page-stroke:#b89ad6;
+--node-store-fill:#1d3024;--node-store-stroke:#79b98a;
+--node-external-fill:#33291b;--node-external-stroke:#d1a462;
+--node-wall-fill:#3a2320;--node-wall-stroke:#e07a66;
+--node-document-fill:#2f2c20;--node-document-stroke:#c9b86a;
+--node-state-fill:#26272a;--node-state-stroke:#a9a6a0;
+--node-person-fill:#2e2233;--node-person-stroke:#bb8cc7;
+--node-region-fill:transparent;--node-region-stroke:#4a4b4f;
+--use-unverified:#26272a;--use-run:#1d2a3d;--use-in-use:#33291b;--use-working:#1d3024;--use-issue:#3a2320;
+--code-bg:#222327;--details-bg:#1f2023;--link:#9ab8e8;}}
+html,body{margin:0;background:var(--page-bg);color:var(--page-text)}
+body{padding:2rem 3rem;font-family:"Source Serif 4","Iowan Old Style",Georgia,"Times New Roman",serif;font-size:18px;line-height:1.6}
+h1,h2,h3,svg text,th,summary,figcaption,.caption,nav{font-family:"Inter","Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+h1{font-size:2rem;margin:0 0 1rem}
+h2{font-size:1.4rem;margin:2.5rem 0 .75rem;border-bottom:1px solid var(--rule);padding-bottom:.3rem}
+h3{font-size:1.1rem;margin:1.8rem 0 .5rem}
+p,li{margin:0 0 1rem}
+a{color:var(--link)}
+code{font-family:"JetBrains Mono","Cascadia Code",Consolas,"Liberation Mono",monospace;font-size:.9em;background:var(--code-bg);padding:.05em .3em;border-radius:3px}
+pre{background:var(--code-bg);padding:.8rem 1rem;overflow-x:auto;font-size:.85em;line-height:1.45;margin:0 0 1rem}
+pre code{background:none;padding:0;font-size:1em}
+table{border-collapse:collapse;width:100%;margin:0 0 1rem;font-size:.92em}
+th,td{border:1px solid var(--rule);padding:.4rem .7rem;text-align:left;vertical-align:top}
+th{background:var(--details-bg)}
+details{background:var(--details-bg);border:1px solid var(--rule);border-radius:6px;padding:.4rem .9rem;margin:0 0 1rem}
+summary{cursor:pointer;font-weight:600}
+nav{border:1px solid var(--rule);border-radius:6px;padding:.2rem 1rem;margin:1.5rem 0}
+nav h2{border:0;margin:.6rem 0 .3rem;font-size:1.1rem}
+nav ol{margin:0 0 .6rem}nav li{margin:0 0 .3rem}
+figure{margin:1rem 0 2rem}
+figcaption h3{margin:.5rem 0 .3rem}
+svg.diagram{display:block;width:100%;height:auto;margin:.4rem 0}
+.caption{color:var(--muted);font-size:.95em;margin:.3rem 0 0}
+</style>
+</head>
+<body>
+<h1>Making vqc/ the home of the merge gate's tests</h1>
+
+<p>This page prepares the design session on Tom's todo of October 14, 2026: VQC should own the tests the merge gate runs, so that every test is in the place where he specifies what quality code means, and all Jarvis code is held to that standard. It explains what VQC is today and what the gate runs today. It then proposes what it would mean for a <code>vqc/</code> directory to own the gate's tests in Jarvis, tom.quest and WikiTom, asks for three rulings, and reports the two Codex audits of earlier versions (section 6). The facts were read from the session branches of the four repositories on October 14 between 9:07 and 9:50 pm Eastern; nothing has been built.</p>
+
+<figure id="fig-legend">
+<figcaption><h3>Legend</h3></figcaption>
+<svg class="diagram" role="img" aria-label="Legend" viewBox="0 0 1412 324" style="max-width:1412px">
+<rect x="1180" y="100" width="216" height="50" rx="10" ry="10" style="fill:var(--node-region-fill);stroke:var(--node-region-stroke);stroke-width:1.2;stroke-dasharray:6 4"/>
+<text x="1192" y="106" dominant-baseline="hanging" style="fill:var(--muted);font-size:13px;font-weight:600;letter-spacing:0.04em">A GROUP OF PARTS</text>
+<line x1="31" y1="129" x2="220" y2="129" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:"/>
+<polygon points="231,129 220,123.5 220,134.5" style="fill:var(--diagram-line)"/>
+<text x="131" y="119" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">sends or writes</text>
+<line x1="331" y1="129" x2="520" y2="129" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:8 5"/>
+<polygon points="531,129 520,123.5 520,134.5" style="fill:var(--diagram-line)"/>
+<text x="431" y="119" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">starts</text>
+<line x1="631" y1="129" x2="820" y2="129" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="831,129 820,123.5 820,134.5" style="fill:var(--diagram-line)"/>
+<text x="731" y="119" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">reads</text>
+<line x1="931" y1="129" x2="1120" y2="129" style="stroke:var(--deny);stroke-width:2;stroke-dasharray:"/>
+<polygon points="1131,129 1120,123.5 1120,134.5" style="fill:var(--deny)"/>
+<line x1="1114" y1="122" x2="1114" y2="136" style="stroke:var(--deny);stroke-width:2.5"/>
+<text x="1031" y="119" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">can refuse</text>
+<ellipse cx="86" cy="44" rx="70" ry="28" style="fill:var(--node-person-fill);stroke:var(--node-person-stroke);stroke-width:1.4"/>
+<text x="86" y="44" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Tom</text>
+<rect x="171" y="16" width="140" height="56" rx="8" ry="8" style="fill:var(--node-page-fill);stroke:var(--node-page-stroke);stroke-width:1.4"/>
+<path d="M171,27 v-3 a8,8 0 0 1 8,-8 h124 a8,8 0 0 1 8,8 v3 z" style="fill:var(--node-page-stroke);opacity:0.55"/>
+<text x="241" y="40" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">A page</text>
+<text x="241" y="58" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">on tom.quest</text>
+<rect x="326" y="16" width="140" height="56" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="396" y="35" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">A program</text>
+<text x="396" y="53" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">on the box</text>
+<rect x="481" y="16" width="140" height="56" rx="8" ry="8" style="fill:var(--node-agent-fill);stroke:var(--node-agent-stroke);stroke-width:1.4"/>
+<rect x="485" y="20" width="132" height="48" rx="5" ry="5" style="fill:none;stroke:var(--node-agent-stroke);stroke-width:1.2"/>
+<text x="551" y="35" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">An agent</text>
+<text x="551" y="53" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">a model at work</text>
+<path d="M636,23 a70,7 0 0 1 140,0 v42 a70,7 0 0 1 -140,0 z" style="fill:var(--node-store-fill);stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<path d="M636,23 a70,7 0 0 0 140,0" style="fill:none;stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<text x="706" y="39" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">A store</text>
+<text x="706" y="57" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">data at rest</text>
+<rect x="791" y="16" width="140" height="56" rx="8" ry="8" style="fill:var(--node-external-fill);stroke:var(--node-external-stroke);stroke-width:1.4;stroke-dasharray:5 4"/>
+<text x="861" y="44" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Outside party</text>
+<polygon points="958,16 1074,16 1086,28 1086,60 1074,72 958,72 946,60 946,28" style="fill:var(--node-wall-fill);stroke:var(--node-wall-stroke);stroke-width:1.4"/>
+<text x="1016" y="35" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">A wall</text>
+<text x="1016" y="53" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">can refuse</text>
+<path d="M1101,16 h128 l12,12 v44 h-140 z" style="fill:var(--node-document-fill);stroke:var(--node-document-stroke);stroke-width:1.4"/>
+<path d="M1229,16 v12 h12" style="fill:none;stroke:var(--node-document-stroke);stroke-width:1.2"/>
+<text x="1171" y="35" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">A record row</text>
+<text x="1171" y="53" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">or document</text>
+<rect x="1256" y="16" width="140" height="56" rx="28" ry="28" style="fill:var(--node-state-fill);stroke:var(--node-state-stroke);stroke-width:1.4"/>
+<text x="1326" y="44" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">A state</text>
+<rect x="16" y="180" width="170" height="56" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="101" y="208" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Kept</text>
+<rect x="201" y="180" width="170" height="56" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--replaced);stroke-width:1.4;stroke-dasharray:5 4"/>
+<text x="286" y="199" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Replaced</text>
+<text x="286" y="217" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">→ what replaces it</text>
+<rect x="386" y="180" width="170" height="56" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--muted);stroke-width:1.4;stroke-dasharray:5 4;opacity:0.6"/>
+<line x1="392" y1="230" x2="550" y2="186" style="stroke:var(--muted);stroke-width:1.6"/>
+<text x="471" y="208" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Removed</text>
+<rect x="571" y="180" width="170" height="56" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--proposed);stroke-width:1.4;stroke-dasharray:5 4"/>
+<text x="656" y="208" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Proposed</text>
+<rect x="16" y="252" width="140" height="56" rx="8" ry="8" style="fill:var(--use-unverified);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="86" y="280" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Unverified</text>
+<rect x="171" y="252" width="140" height="56" rx="8" ry="8" style="fill:var(--use-run);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="241" y="280" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Run</text>
+<rect x="326" y="252" width="140" height="56" rx="8" ry="8" style="fill:var(--use-in-use);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="396" y="280" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">In use</text>
+<rect x="481" y="252" width="140" height="56" rx="8" ry="8" style="fill:var(--use-working);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="551" y="280" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Working</text>
+<rect x="636" y="252" width="140" height="56" rx="8" ry="8" style="fill:var(--use-issue);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="706" y="280" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Issue</text>
+</svg>
+<script type="application/json" id="data-legend">{"nodes":[{"id":"l1","label":["Tom"],"x":16,"y":16,"w":140,"h":56,"type":"person"},{"id":"l2","label":["A page","on tom.quest"],"x":171,"y":16,"w":140,"h":56,"type":"page"},{"id":"l3","label":["A program","on the box"],"x":326,"y":16,"w":140,"h":56,"type":"program"},{"id":"l4","label":["An agent","a model at work"],"x":481,"y":16,"w":140,"h":56,"type":"agent"},{"id":"l5","label":["A store","data at rest"],"x":636,"y":16,"w":140,"h":56,"type":"store"},{"id":"l6","label":["Outside party"],"x":791,"y":16,"w":140,"h":56,"type":"external"},{"id":"l7","label":["A wall","can refuse"],"x":946,"y":16,"w":140,"h":56,"type":"wall"},{"id":"l8","label":["A record row","or document"],"x":1101,"y":16,"w":140,"h":56,"type":"document"},{"id":"l9","label":["A state"],"x":1256,"y":16,"w":140,"h":56,"type":"state"},{"id":"p1a","label":[""],"x":30,"y":128,"w":2,"h":2,"type":"point"},{"id":"p1b","label":[""],"x":230,"y":128,"w":2,"h":2,"type":"point"},{"id":"p2a","label":[""],"x":330,"y":128,"w":2,"h":2,"type":"point"},{"id":"p2b","label":[""],"x":530,"y":128,"w":2,"h":2,"type":"point"},{"id":"p3a","label":[""],"x":630,"y":128,"w":2,"h":2,"type":"point"},{"id":"p3b","label":[""],"x":830,"y":128,"w":2,"h":2,"type":"point"},{"id":"p4a","label":[""],"x":930,"y":128,"w":2,"h":2,"type":"point"},{"id":"p4b","label":[""],"x":1130,"y":128,"w":2,"h":2,"type":"point"},{"id":"lr","label":["A group of parts"],"x":1180,"y":100,"w":216,"h":50,"type":"region"},{"id":"f1","label":["Kept"],"x":16,"y":180,"w":170,"h":56,"type":"program"},{"id":"f2","label":["Replaced","→ what replaces it"],"x":201,"y":180,"w":170,"h":56,"type":"program","fate":"replaced"},{"id":"f3","label":["Removed"],"x":386,"y":180,"w":170,"h":56,"type":"program","fate":"removed"},{"id":"f4","label":["Proposed"],"x":571,"y":180,"w":170,"h":56,"type":"program","fate":"proposed"},{"id":"u1","label":["Unverified"],"x":16,"y":252,"w":140,"h":56,"type":"program","use":"unverified"},{"id":"u2","label":["Run"],"x":171,"y":252,"w":140,"h":56,"type":"program","use":"run"},{"id":"u3","label":["In use"],"x":326,"y":252,"w":140,"h":56,"type":"program","use":"in use"},{"id":"u4","label":["Working"],"x":481,"y":252,"w":140,"h":56,"type":"program","use":"working"},{"id":"u5","label":["Issue"],"x":636,"y":252,"w":140,"h":56,"type":"program","use":"issue"}],"edges":[{"from":"p1a","to":"p1b","label":"sends or writes","type":"send"},{"from":"p2a","to":"p2b","label":"starts","type":"start"},{"from":"p3a","to":"p3b","label":"reads","type":"read"},{"from":"p4a","to":"p4b","label":"can refuse","type":"deny"}]}</script>
+<p class="caption">The legend: one shape per type of part, one line style per relation, the four fate styles and the five use states, the same in every drawing below; generated from worker/parts.json at the commit that holds this page.</p>
+</figure>
+
+<figure id="fig-whole">
+<figcaption><h3>The design in one drawing</h3></figcaption>
+<svg class="diagram" role="img" aria-label="The design in one drawing" viewBox="0 0 1516 502" style="max-width:1516px">
+<rect x="200" y="16" width="1060" height="470" rx="10" ry="10" style="fill:var(--node-region-fill);stroke:var(--node-region-stroke);stroke-width:1.2;stroke-dasharray:6 4"/>
+<text x="212" y="22" dominant-baseline="hanging" style="fill:var(--muted);font-size:13px;font-weight:600;letter-spacing:0.04em">THE BOX</text>
+<line x1="176" y1="90" x2="239" y2="90" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:"/>
+<polygon points="250.00000000006366,90 239.00000000006366,84.5 239.00000000006366,95.5" style="fill:var(--diagram-line)"/>
+<line x1="500" y1="90" x2="431" y2="90" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="419.99999999993634,90 430.99999999993634,95.5 430.99999999993634,84.5" style="fill:var(--diagram-line)"/>
+<line x1="398.57" y1="200" x2="531.83" y2="125.37" style="stroke:var(--deny);stroke-width:2;stroke-dasharray:"/>
+<polygon points="541.4285714286184,119.99999999997368 529.1436867240463,120.57585397050049 534.5183237822966,130.1734201459474" style="fill:var(--deny)"/>
+<line x1="523.18" y1="122.2" x2="530.02" y2="134.41" style="stroke:var(--deny);stroke-width:2.5"/>
+<text x="465.11" y="151.27" text-anchor="end" dominant-baseline="middle" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">can refuse</text>
+<line x1="686.71" y1="118.46" x2="777.83" y2="146.74" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="788.3333333334398,150.00000000003303 779.4578235103146,141.48675588397424 776.1974321467177,151.99246138889782" style="fill:var(--diagram-line)"/>
+<text x="740.49" y="124.68" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">reads</text>
+<line x1="1030" y1="180" x2="1011" y2="180" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="999.9999999999272,180 1010.9999999999272,185.5 1010.9999999999272,174.5" style="fill:var(--diagram-line)"/>
+<text x="1015" y="170" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">reads</text>
+<line x1="885" y1="210" x2="885" y2="239" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:8 5"/>
+<polygon points="885,250.00000000005912 890.5,239.00000000005912 879.5,239.00000000005912" style="fill:var(--diagram-line)"/>
+<text x="895" y="230" text-anchor="start" dominant-baseline="middle" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">runs</text>
+<line x1="885" y1="400" x2="885" y2="321" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="885,309.9999999999409 879.5,320.9999999999409 890.5,320.9999999999409" style="fill:var(--diagram-line)"/>
+<text x="875" y="355" text-anchor="end" dominant-baseline="middle" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">checks</text>
+<line x1="971.33" y1="307.62" x2="1030.77" y2="326.65" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="1041.250000000076,330.00000000002433 1032.4496008799542,321.40913419228644 1029.0970678818126,331.885799811479" style="fill:var(--diagram-line)"/>
+<text x="1009.34" y="309.29" text-anchor="start" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">adopts</text>
+<line x1="595" y1="120" x2="595" y2="389" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:8 5"/>
+<polygon points="595,400.0000000000273 600.5,389.0000000000273 589.5,389.0000000000273" style="fill:var(--diagram-line)"/>
+<text x="605" y="260" text-anchor="start" dominant-baseline="middle" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">starts</text>
+<line x1="690" y1="90" x2="1289" y2="90" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:"/>
+<polygon points="1300.0000000000364,90 1289.0000000000364,84.5 1289.0000000000364,95.5" style="fill:var(--diagram-line)"/>
+<line x1="1400" y1="120" x2="1400" y2="239" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:"/>
+<polygon points="1400,250.00000000008185 1405.5,239.00000000008185 1394.5,239.00000000008185" style="fill:var(--diagram-line)"/>
+<text x="1410" y="185" text-anchor="start" dominant-baseline="middle" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">gate opens</text>
+<rect x="16" y="60" width="160" height="60" rx="8" ry="8" style="fill:var(--node-agent-fill);stroke:var(--node-agent-stroke);stroke-width:1.4"/>
+<rect x="20" y="64" width="152" height="52" rx="5" ry="5" style="fill:none;stroke:var(--node-agent-stroke);stroke-width:1.2"/>
+<text x="96" y="81" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">A builder</text>
+<text x="96" y="99" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">pushes a branch</text>
+<path d="M250,67 a85,7 0 0 1 170,0 v46 a85,7 0 0 1 -170,0 z" style="fill:var(--node-store-fill);stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<path d="M250,67 a85,7 0 0 0 170,0" style="fill:none;stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<text x="335" y="85" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Bare repository</text>
+<text x="335" y="103" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">/var/lib/tts/git</text>
+<rect x="500" y="60" width="190" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="595" y="81" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">The gate</text>
+<text x="595" y="99" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">gate.mjs, every minute</text>
+<polygon points="262,200 428,200 440,212 440,248 428,260 262,260 250,248 250,212" style="fill:var(--node-wall-fill);stroke:var(--node-wall-stroke);stroke-width:1.4"/>
+<text x="345" y="221" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">The walls</text>
+<text x="345" y="239" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">secrets, key shapes</text>
+<rect x="770" y="150" width="230" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="885" y="171" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Step table, unchanged</text>
+<text x="885" y="189" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">pull-request-checks.mjs</text>
+<rect x="1030" y="150" width="210" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="1135" y="171" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">PR checks, recheck</text>
+<text x="1135" y="189" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">same commands</text>
+<path d="M770,257 a115,7 0 0 1 230,0 v46 a115,7 0 0 1 -230,0 z" style="fill:var(--node-store-fill);stroke:var(--replaced);stroke-width:1.4;stroke-dasharray:5 4"/>
+<path d="M770,257 a115,7 0 0 0 230,0" style="fill:none;stroke:var(--replaced);stroke-width:1.4;stroke-dasharray:5 4"/>
+<text x="885" y="275" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Tests and checks</text>
+<text x="885" y="293" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">→ each repo's vqc/</text>
+<rect x="770" y="400" width="230" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--proposed);stroke-width:1.4;stroke-dasharray:5 4"/>
+<text x="885" y="421" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Location check</text>
+<text x="885" y="439" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">a test outside vqc/ is red</text>
+<path d="M1030,330 h198 l12,12 v48 h-210 z" style="fill:var(--node-document-fill);stroke:var(--node-document-stroke);stroke-width:1.4"/>
+<path d="M1228,330 v12 h12" style="fill:none;stroke:var(--node-document-stroke);stroke-width:1.2"/>
+<text x="1135" y="351" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">The law</text>
+<text x="1135" y="369" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">CMT vqc/constitution.md</text>
+<rect x="500" y="400" width="190" height="60" rx="8" ry="8" style="fill:var(--node-agent-fill);stroke:var(--node-agent-stroke);stroke-width:1.4"/>
+<rect x="504" y="404" width="182" height="52" rx="5" ry="5" style="fill:none;stroke:var(--node-agent-stroke);stroke-width:1.2"/>
+<text x="595" y="421" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">The audit</text>
+<text x="595" y="439" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">Codex reads the diff</text>
+<path d="M1300,67 a100,7 0 0 1 200,0 v46 a100,7 0 0 1 -200,0 z" style="fill:var(--node-store-fill);stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<path d="M1300,67 a100,7 0 0 0 200,0" style="fill:none;stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<text x="1400" y="85" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">The record</text>
+<text x="1400" y="103" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">tests-run, audit-verdict</text>
+<rect x="1300" y="250" width="200" height="60" rx="30" ry="30" style="fill:var(--node-state-fill);stroke:var(--node-state-stroke);stroke-width:1.4"/>
+<text x="1400" y="280" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">main moves</text>
+</svg>
+<script type="application/json" id="data-whole">{"nodes":[{"id":"box","label":["The box"],"x":200,"y":16,"w":1060,"h":470,"type":"region"},{"id":"builder","label":["A builder","pushes a branch"],"x":16,"y":60,"w":160,"h":60,"type":"agent"},{"id":"bare","label":["Bare repository","/var/lib/tts/git"],"x":250,"y":60,"w":170,"h":60,"type":"store"},{"id":"gate","label":["The gate","gate.mjs, every minute"],"x":500,"y":60,"w":190,"h":60,"type":"program"},{"id":"walls","label":["The walls","secrets, key shapes"],"x":250,"y":200,"w":190,"h":60,"type":"wall"},{"id":"table","label":["Step table, unchanged","pull-request-checks.mjs"],"x":770,"y":150,"w":230,"h":60,"type":"program"},{"id":"others","label":["PR checks, recheck","same commands"],"x":1030,"y":150,"w":210,"h":60,"type":"program"},{"id":"tests","label":["Tests and checks","→ each repo's vqc/"],"x":770,"y":250,"w":230,"h":60,"type":"store","fate":"replaced"},{"id":"where","label":["Location check","a test outside vqc/ is red"],"x":770,"y":400,"w":230,"h":60,"type":"program","fate":"proposed"},{"id":"law","label":["The law","CMT vqc/constitution.md"],"x":1030,"y":330,"w":210,"h":60,"type":"document"},{"id":"audit","label":["The audit","Codex reads the diff"],"x":500,"y":400,"w":190,"h":60,"type":"agent"},{"id":"record","label":["The record","tests-run, audit-verdict"],"x":1300,"y":60,"w":200,"h":60,"type":"store"},{"id":"main","label":["main moves"],"x":1300,"y":250,"w":200,"h":60,"type":"state"}],"edges":[{"from":"builder","to":"bare","label":"","type":"send"},{"from":"gate","to":"bare","label":"","type":"read"},{"from":"walls","to":"gate","label":"can refuse","type":"deny"},{"from":"gate","to":"table","label":"reads","type":"read"},{"from":"others","to":"table","label":"reads","type":"read"},{"from":"table","to":"tests","label":"runs","type":"start"},{"from":"where","to":"tests","label":"checks","type":"read"},{"from":"tests","to":"law","label":"adopts","type":"read"},{"from":"gate","to":"audit","label":"starts","type":"start"},{"from":"gate","to":"record","label":"","type":"send"},{"from":"record","to":"main","label":"gate opens","type":"send"}]}</script>
+<p class="caption">The gate and the commands it runs are unchanged; what moves is the test and check files themselves, from beside the code into each repository's vqc/, with one check that refuses a test file anywhere else. Blue dashed parts do not exist yet; the amber part moves.</p>
+</figure>
+
+<p>The drawing above is the proposed end state. A builder, the session that edits a repository, pushes a branch to the box's bare repository. The gate, the program on the box that lands branches on main, reads the pushed head and runs the same commands it runs today. What changes is where the files those commands run sit. Every test file and every check script moves from beside the code into the repository's <code>vqc/</code> directory, which becomes their home. Each runner is pointed there, and one new check turns red if a test file sits anywhere else. The walls, the audit, the step table, the rows the gate writes and the way main moves stay as they are.</p>
+
+<nav><h2>Contents</h2><ol>
+<li><a href="#cmt">What VQC is today, in ComplexMultiTrigger</a></li>
+<li><a href="#tq">What VQC is today, in tom.quest</a></li>
+<li><a href="#gate">What the gate runs today, and where a quality claim reaches Tom</a></li>
+<li><a href="#design">What it means for vqc/ to own the gate's tests</a></li>
+<li><a href="#rulings">Rulings requested</a></li>
+<li><a href="#audit">The Codex audits of earlier versions</a></li>
+<li><a href="#later">What this design leaves for later, and why</a></li>
+<li><a href="#corrections">What the setup brief had wrong</a></li>
+<li><a href="#unchanged">What this leaves unchanged</a></li>
+<li><a href="#next">What happens next</a></li>
+</ol></nav>
+
+<h2 id="cmt">1. What VQC is today, in ComplexMultiTrigger</h2>
+
+<figure id="fig-cmt">
+<figcaption><h3>VQC in ComplexMultiTrigger today</h3></figcaption>
+<svg class="diagram" role="img" aria-label="VQC in ComplexMultiTrigger today" viewBox="0 0 1176 332" style="max-width:1176px">
+<rect x="16" y="16" width="600" height="300" rx="10" ry="10" style="fill:var(--node-region-fill);stroke:var(--node-region-stroke);stroke-width:1.2;stroke-dasharray:6 4"/>
+<text x="28" y="22" dominant-baseline="hanging" style="fill:var(--muted);font-size:13px;font-weight:600;letter-spacing:0.04em">CMT VQC/</text>
+<line x1="700" y1="90" x2="601" y2="90" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="589.9999999998863,90 600.9999999998863,95.5 600.9999999998863,84.5" style="fill:var(--diagram-line)"/>
+<text x="645" y="80" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">byte-checks</text>
+<line x1="700.21" y1="113.83" x2="293.25" y2="202.16" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="282.49681528649245,204.4968152866528 294.4131400065984,207.53839467325326 292.0798736278364,196.78870314252833" style="fill:var(--diagram-line)"/>
+<text x="489.23" y="149.39" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">reads</text>
+<line x1="810" y1="200" x2="810" y2="131" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="810,119.99999999994543 804.5,130.99999999994543 815.5,130.99999999994543" style="fill:var(--diagram-line)"/>
+<text x="800" y="160" text-anchor="end" dominant-baseline="middle" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">must turn red</text>
+<line x1="1014.2" y1="142.94" x2="928.1" y2="120.62" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:8 5"/>
+<polygon points="917.4491589190336,117.85718934937907 926.7168329255469,125.94175603591195 929.4774166721679,115.29379015608815" style="fill:var(--diagram-line)"/>
+<text x="968.33" y="120.72" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">an agent runs pytest</text>
+<path d="M340,60 h238 l12,12 v48 h-250 z" style="fill:var(--node-document-fill);stroke:var(--node-document-stroke);stroke-width:1.4"/>
+<path d="M578,60 v12 h12" style="fill:none;stroke:var(--node-document-stroke);stroke-width:1.2"/>
+<text x="465" y="81" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">constitution.md</text>
+<text x="465" y="99" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">axioms, ideals, doctrines</text>
+<path d="M40,60 h238 l12,12 v48 h-250 z" style="fill:var(--node-document-fill);stroke:var(--node-document-stroke);stroke-width:1.4"/>
+<path d="M278,60 v12 h12" style="fill:none;stroke:var(--node-document-stroke);stroke-width:1.2"/>
+<text x="165" y="81" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">adoption.md</text>
+<text x="165" y="99" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">70 rulings</text>
+<path d="M40,200 h238 l12,12 v48 h-250 z" style="fill:var(--node-document-fill);stroke:var(--node-document-stroke);stroke-width:1.4"/>
+<path d="M278,200 v12 h12" style="fill:none;stroke:var(--node-document-stroke);stroke-width:1.2"/>
+<text x="165" y="221" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">ledger.yaml</text>
+<text x="165" y="239" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">356 debt entries</text>
+<path d="M340,200 h238 l12,12 v48 h-250 z" style="fill:var(--node-document-fill);stroke:var(--node-document-stroke);stroke-width:1.4"/>
+<path d="M578,200 v12 h12" style="fill:none;stroke:var(--node-document-stroke);stroke-width:1.2"/>
+<text x="465" y="221" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">audits.yaml</text>
+<text x="465" y="239" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">4 agent audits</text>
+<rect x="700" y="60" width="220" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="810" y="81" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">tests/guards/</text>
+<text x="810" y="99" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">28 pytest files</text>
+<rect x="700" y="200" width="220" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="810" y="221" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">tests/faults/</text>
+<text x="810" y="239" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">witness faults</text>
+<ellipse cx="1080" cy="160" rx="80" ry="30" style="fill:var(--node-person-fill);stroke:var(--node-person-stroke);stroke-width:1.4"/>
+<text x="1080" y="151" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Tom</text>
+<text x="1080" y="169" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">merges by hand</text>
+</svg>
+<script type="application/json" id="data-cmt">{"nodes":[{"id":"vqc","label":["CMT vqc/"],"x":16,"y":16,"w":600,"h":300,"type":"region"},{"id":"con","label":["constitution.md","axioms, ideals, doctrines"],"x":340,"y":60,"w":250,"h":60,"type":"document"},{"id":"adopt","label":["adoption.md","70 rulings"],"x":40,"y":60,"w":250,"h":60,"type":"document"},{"id":"ledger","label":["ledger.yaml","356 debt entries"],"x":40,"y":200,"w":250,"h":60,"type":"document"},{"id":"audits","label":["audits.yaml","4 agent audits"],"x":340,"y":200,"w":250,"h":60,"type":"document"},{"id":"guards","label":["tests/guards/","28 pytest files"],"x":700,"y":60,"w":220,"h":60,"type":"program"},{"id":"faults","label":["tests/faults/","witness faults"],"x":700,"y":200,"w":220,"h":60,"type":"program"},{"id":"tom","label":["Tom","merges by hand"],"x":1000,"y":130,"w":160,"h":60,"type":"person"}],"edges":[{"from":"guards","to":"con","label":"byte-checks","type":"read"},{"from":"guards","to":"ledger","label":"reads","type":"read"},{"from":"faults","to":"guards","label":"must turn red","type":"read"},{"from":"tom","to":"guards","label":"an agent runs pytest","type":"start"}]}</script>
+<p class="caption">In CMT, vqc/ holds the law and its data; the checks that enforce it are pytest files in tests/guards/ that read those data files; nothing runs them on a push, because CMT has no gate.</p>
+</figure>
+
+<p>VQC stands for Verified Quality Code. It is Tom's code-quality governance, first built in his research repository ComplexMultiTrigger (CMT). Its purpose, as he put it on September 1, is that he can trust an agent when it says a change is high quality. On September 24 he drew its boundary: VQC holds formal rules that are enforced in code, and the reasons he cares about them live in Jarvis's model of him, not in VQC.</p>
+
+<p>The law is <code>vqc/constitution.md</code>, version 4. It describes itself as codebase-independent and says it governs form, not content. It is ranked from the most fixed to the most local. Three axioms state premises about agents. Nine ideals, numbered C1 to C9, state goals; for example, C1 says every piece of knowledge has one home, and C3 says fail loudly. Thirty-one doctrines, numbered D1 to D31, are strategies that carry out the ideals. Statutes are the per-repository data that bind the law to one tree. The axiom that matters most for this design is A3: "Executable law binds deterministically; prose influences probabilistically." So a rule that must always hold must be a check that runs.</p>
+
+<p>Four of the constitution's ideas bear on this design. Each is VQC's own term, defined in the constitution:</p>
+<table>
+<tr><th>VQC term</th><th>What it means</th></tr>
+<tr><td>Claim</td><td>A statement about the code that must stay true. Doctrine D7, claims-not-tests, says claims are what must stay covered, and that claims are derived from the checks (from their witness faults and from the registries they read), not declared in prose. It rejects counting tests as a measure. A test may be deleted when every claim it covered is still covered.</td></tr>
+<tr><td>Witness fault</td><td>A small, written-down defect that a check exists to catch. Doctrine D8 says every new check is born with at least one. A harness proves three things: the suite is green without the defect, this check turns red with it, and a sample of other checks stays green with it, so a defect that breaks everything proves nothing.</td></tr>
+<tr><td>Ledger entry</td><td>A dated entry in <code>vqc/ledger.yaml</code> for something known to be not yet true, with the condition that closes it. CMT's ledger holds 356 entries (counted by <code>grep -c '^- id:'</code>).</td></tr>
+<tr><td>Ratchet-adoption</td><td>A new check lands as a gate for new cases, and every existing violation is written into the ledger as dated debt, never exempted silently.</td></tr>
+</table>
+
+<p>The fact that shapes this design is that CMT's <code>vqc/</code> holds the law and its data but no tests. The checks that enforce the law are pytest files outside it. <code>tests/guards/</code> holds 28 test files, which check the ledger's shape, that generated text matches its source, and that every binding article is either carried out or recorded as debt. <code>tests/faults/</code> holds the witness faults and their runner. CMT has no gate. It has no CI and no hook of its own (the box's checkout uses Jarvis's hooks), and a merge is Tom's own step after an agent has run pytest.</p>
+
+<details><summary>Files in CMT's vqc/ and their counts</summary>
+<table>
+<tr><th>File</th><th>What it holds</th></tr>
+<tr><td>constitution.md</td><td>The law. Its tables are generated and kept byte-equal to the registries in <code>tests/guards/</code>, by <code>tests/guards/regen.py</code>.</td></tr>
+<tr><td>rationale.md</td><td>Why each design choice was made, so that none of it is argued again from scratch.</td></tr>
+<tr><td>adoption.md</td><td>CMT's adoption clause, which records which articles apply, where its statutes live and how often each check runs, plus a rulings log numbered through 70. Numbers 56 to 66 are reserved for a branch that has not merged, so the checkout holds 59 numbered rulings. It says the ledger has "13 open entries", which is stale: the ledger holds 356.</td></tr>
+<tr><td>ledger.yaml</td><td>356 entries: 209 descent, 79 alignment and 68 pending-fence. Only 3 carry an anti-guard, a check that turns red if the gap closes without the entry being removed.</td></tr>
+<tr><td>audits.yaml</td><td>4 scheduled agent audits. One has ever run, last on August 12.</td></tr>
+<tr><td>audits/</td><td>Dated audit reports and the code that builds an annotated corpus of transcripts. It holds no transcript data.</td></tr>
+<tr><td>skills.yaml, september-glossary.yaml</td><td>The skill registry (1 row) and the September campaign's glossary (121 terms).</td></tr>
+<tr><td>impl/</td><td>Work orders, not tests: the bootstrap phases B1 to B14 (landed), M1 to M3 (landed) and S1 and S2 (not landed).</td></tr>
+<tr><td>proposed/</td><td>21 files of rows that agents proposed during the July transition. Everything in it is dated September 24 or earlier and is now a historical record.</td></tr>
+</table>
+<p>The CMT test suite has 390 pytest files in all. A bare <code>pytest</code> runs the commit tier, <code>pytest -m "not gpu"</code> runs the full tier, and <code>-m gpu</code> runs on the Turing cluster.</p>
+</details>
+
+<h2 id="tq">2. What VQC is today, in tom.quest</h2>
+
+<p>tom.quest adopted VQC on August 27, by Tom's ruling to apply the constitution and ignore CMT-specific articles. Its <code>vqc/adoption.md</code> switches off five doctrines (D15, D16, D17, D22 and D30) and cites the constitution in CMT without copying it.</p>
+
+<p>tom.quest's <code>vqc/verifiers.md</code> sets a constraint this design must keep. It says there are exactly three verifiers, the sources of the rows the merge gate reads:</p>
+<table>
+<tr><th>Verifier</th><th>What it is</th><th>What it writes</th></tr>
+<tr><td>Checks</td><td>Every deterministic check: a program answering by string, count, schema or regex.</td><td>The tests-run row for the head</td></tr>
+<tr><td>The audit</td><td>A model of another family reading a change before it merges.</td><td>The audit-verdict row for the head</td></tr>
+<tr><td>The evals</td><td>A model reading outputs against Tom's labels.</td><td>One eval-run event per set</td></tr>
+</table>
+<p>Two of the three write a row the merge gate reads; the evals write events the gate does not read. Its rule is: "a new deterministic check is a test, a new judgment of a change is part of the audit's prompt, and a new judgment of an output is a case in the evals. There is no fourth row, and there is no register of verifiers — a register would be a cross-cutting dimension every future change had to satisfy, which is the wicked feature Tom's 2026-09-11 ruling refuses." A list that every new test had to be entered in would be such a register. That was the first version of this page, and the audit rejected it (section 6). Putting the test files themselves in <code>vqc/</code> needs no list.</p>
+
+<p>Its own tests are two vitest files inside <code>vqc/</code> (9 tests). They check the shape of its ledger (20 entries), its todos (16), its steering entries (5) and its rulings log (15 rulings). tom.quest also keeps a prose inventory of every test and check in <code>docs/tests.md</code>.</p>
+
+<p>Jarvis and WikiTom have no <code>vqc/</code> directory. VQC is mentioned in WikiTom's explainers and sources, but no directory there holds VQC files.</p>
+
+<h2 id="gate">3. What the gate runs today, and where a quality claim reaches Tom</h2>
+
+<figure id="fig-today">
+<figcaption><h3>What the gate runs today</h3></figcaption>
+<svg class="diagram" role="img" aria-label="What the gate runs today" viewBox="0 0 1096 336" style="max-width:1096px">
+<line x1="196" y1="170" x2="249" y2="170" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="260.00000000007276,170 249.00000000007276,164.5 249.00000000007276,175.5" style="fill:var(--diagram-line)"/>
+<text x="228" y="160" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">reads</text>
+<line x1="450" y1="140" x2="599.7" y2="83.86" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:8 5"/>
+<polygon points="610.0000000000879,79.99999999996705 597.7692001180923,78.71254738080961 601.6315579755645,89.01216833406909" style="fill:var(--diagram-line)"/>
+<line x1="480" y1="170" x2="549" y2="170" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:8 5"/>
+<polygon points="560,170 549,164.5 549,175.5" style="fill:var(--diagram-line)"/>
+<line x1="450" y1="200" x2="599.7" y2="256.14" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:8 5"/>
+<polygon points="610.0000000000879,260.00000000003297 601.6315579755645,250.9878316659309 597.7692001180923,261.2874526191904" style="fill:var(--diagram-line)"/>
+<line x1="820" y1="50" x2="889" y2="50" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="900,50 889,44.5 889,55.5" style="fill:var(--diagram-line)"/>
+<text x="860" y="40" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">finds all</text>
+<line x1="820" y1="170" x2="889" y2="170" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="900,170 889,164.5 889,175.5" style="fill:var(--diagram-line)"/>
+<text x="860" y="160" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">finds reached</text>
+<line x1="820" y1="290" x2="889" y2="290" style="stroke:var(--diagram-line);stroke-width:1.6;stroke-dasharray:2 5"/>
+<polygon points="900,290 889,284.5 889,295.5" style="fill:var(--diagram-line)"/>
+<text x="860" y="280" text-anchor="middle" dominant-baseline="auto" style="fill:var(--diagram-edge-text);font-size:13px;paint-order:stroke;stroke:var(--page-bg);stroke-width:5px;stroke-linejoin:round">finds all</text>
+<rect x="16" y="140" width="180" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="106" y="161" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">The gate</text>
+<text x="106" y="179" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">gate.mjs</text>
+<rect x="260" y="140" width="220" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="370" y="161" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">REPOS table + steps</text>
+<text x="370" y="179" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">pull-request-checks.mjs</text>
+<rect x="560" y="20" width="260" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="690" y="41" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">Jarvis: pnpm verify</text>
+<text x="690" y="59" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">7 check scripts + vitest</text>
+<rect x="560" y="140" width="260" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="690" y="161" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">tom.quest: 6 steps</text>
+<text x="690" y="179" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">vitest on reached files</text>
+<rect x="560" y="260" width="260" height="60" rx="8" ry="8" style="fill:var(--node-program-fill);stroke:var(--node-program-stroke);stroke-width:1.4"/>
+<text x="690" y="281" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">WikiTom</text>
+<text x="690" y="299" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:13px;font-weight:400">evidence check + 1 test</text>
+<path d="M900,27 a90,7 0 0 1 180,0 v46 a90,7 0 0 1 -180,0 z" style="fill:var(--node-store-fill);stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<path d="M900,27 a90,7 0 0 0 180,0" style="fill:none;stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<text x="990" y="54" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">132 test files</text>
+<path d="M900,147 a90,7 0 0 1 180,0 v46 a90,7 0 0 1 -180,0 z" style="fill:var(--node-store-fill);stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<path d="M900,147 a90,7 0 0 0 180,0" style="fill:none;stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<text x="990" y="174" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">163 test files</text>
+<path d="M900,267 a90,7 0 0 1 180,0 v46 a90,7 0 0 1 -180,0 z" style="fill:var(--node-store-fill);stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<path d="M900,267 a90,7 0 0 0 180,0" style="fill:none;stroke:var(--node-store-stroke);stroke-width:1.4"/>
+<text x="990" y="294" text-anchor="middle" dominant-baseline="middle" style="fill:var(--diagram-text);font-size:15px;font-weight:600">1 test file</text>
+</svg>
+<script type="application/json" id="data-today">{"nodes":[{"id":"gate","label":["The gate","gate.mjs"],"x":16,"y":140,"w":180,"h":60,"type":"program"},{"id":"table","label":["REPOS table + steps","pull-request-checks.mjs"],"x":260,"y":140,"w":220,"h":60,"type":"program"},{"id":"j","label":["Jarvis: pnpm verify","7 check scripts + vitest"],"x":560,"y":20,"w":260,"h":60,"type":"program"},{"id":"t","label":["tom.quest: 6 steps","vitest on reached files"],"x":560,"y":140,"w":260,"h":60,"type":"program"},{"id":"w","label":["WikiTom","evidence check + 1 test"],"x":560,"y":260,"w":260,"h":60,"type":"program"},{"id":"jt","label":["132 test files"],"x":900,"y":20,"w":180,"h":60,"type":"store"},{"id":"tt","label":["163 test files"],"x":900,"y":140,"w":180,"h":60,"type":"store"},{"id":"wt","label":["1 test file"],"x":900,"y":260,"w":180,"h":60,"type":"store"}],"edges":[{"from":"gate","to":"table","label":"reads","type":"read"},{"from":"table","to":"j","label":"","type":"start"},{"from":"table","to":"t","label":"","type":"start"},{"from":"table","to":"w","label":"","type":"start"},{"from":"j","to":"jt","label":"finds all","type":"read"},{"from":"t","to":"tt","label":"finds reached","type":"read"},{"from":"w","to":"wt","label":"finds all","type":"read"}]}</script>
+<p class="caption">Today the gate picks one mode per repository from a table written into pull-request-checks.mjs; the mode fixes the install and the steps, and each step's runner collects its test files from wherever they sit; nothing in any vqc/ is read.</p>
+</figure>
+
+<p>The gate (Jarvis <code>worker/jobs/gate.mjs</code>) runs every minute. For each pushed head it works in a fixed order. It checks that the head contains main. It runs the walls, the checks that refuse a secret's value or a key's shape and, in a public repository, a model-of-tom line or a private path. It runs the repository's checks, unless a tests-run row for that exact commit is already on record (rows are written once per commit and kept). It runs the audit when the change touches a wall, a git hook, <code>setup.sh</code>, <code>worker/cron</code> or one of the gate's own files, or when a commit carries the trailer <code>Complex: yes</code>. It then asks the record whether the gate is open and, if so, moves main. The record's answer (GET <code>/tts/merge-gate</code>) is yes when the head's tests-run row says passed and its audit-verdict row says APPROVED. There is one exception: the nightly job pushes WikiTom's snapshot and vocabulary commits straight to main, "by design: its snapshot and vocabulary commits are no change anybody reviews" (<code>convex/ttsMerge.ts</code>), and a <code>nightly-run</code> row opens the gate for them. The nightly recheck runs WikiTom's checks after that push.</p>
+
+<p>No list says which tests run. A table written into <code>pull-request-checks.mjs</code> gives each repository a mode, and the mode fixes an install step and a sequence of steps. Jarvis's and tom.quest's steps run in a memory-capped systemd scope with a 10-minute limit; WikiTom's run with a timeout and no memory cap. The nightly recheck (<code>worker/jobs/recheck.mjs</code>) runs each repository's checks again on main and writes a job-ok or job-failed event, not a tests-run row. For Jarvis and WikiTom it reads the same table; for tom.quest it reads the GitHub workflow's steps.</p>
+<table>
+<tr><th>Repository</th><th>What runs</th><th>Test files (excluding node_modules)</th></tr>
+<tr><td>Jarvis</td><td><code>pnpm install</code>, then <code>pnpm run verify</code>: seven check scripts (agents-md, vocabulary, parts, parts diagrams, leaks, test environment, types), then every vitest file.</td><td>132</td></tr>
+<tr><td>tom.quest</td><td><code>pnpm install</code>, then six steps: guardrail scripts, secret scan, typecheck, vitest, build, and Playwright end-to-end tests on the build. vitest runs only the files the change reaches. It runs the whole suite when there is no base, a file was deleted, a changed file is not code (yaml, md, package.json and similar), or <code>vitest.config.mts</code> or <code>next.config.ts</code> changed. Until the cut-over from GitHub pull requests, a pull request's tests-run row comes from tom.quest's GitHub workflow instead.</td><td>163: 66 under app/, 53 convex, 15 shared, 9 scripts, 9 Python in turing-api that nothing runs, 8 Playwright, 2 vqc, 1 test</td></tr>
+<tr><td>WikiTom</td><td>The evidence check (<code>scripts/check-evidence.mjs</code>, which checks every model-of-tom line against its evidence and reads Jarvis's main), then <code>node --test</code> over <code>scripts/**/*.test.mjs</code>. The gate's, the pull-request checker's and the recheck's checkouts of WikiTom each hold <code>model-of-tom/</code>, <code>scripts/</code> and the top-level files.</td><td>1</td></tr>
+</table>
+<p>So today the definition of what a repository's checks are lives in two places. Jarvis's code fixes the steps. Each repository's <code>package.json</code> and runner configuration fix which files each step collects, and they are read from the head being judged. Nothing in any <code>vqc/</code> takes part. Runners also skip some tests they collect: tom.quest has one unconditional skip (<code>e2e/perfume.spec.ts:30</code>) and several that need credentials or real data, and Jarvis has skips by platform. A runner can also miss a file entirely. Jarvis's vitest collects only <code>worker/</code>, <code>scripts/</code> and <code>test/</code>, and tom.quest's nine Python test files are collected by nothing.</p>
+
+<p>A quality claim reaches Tom in fewer places than one might assume. The tests-run and audit-verdict rows are read by the gate, and the audit reads the tests-run row. A <code>grep</code> for both names in <code>tom.quest/app</code> found no page that shows them. The gate sends its verdict (landed, blocked or rejected) as a message to the session that pushed. Before pushing, the builder runs two things on its commit. Its pre-review, a subagent reading the diff, writes no row. <code>jarvis audit</code> on the exact commit posts the audit-verdict row the gate then reads. The sessions page shows only "deployed" and a commit hash.</p>
+
+<h2 id="design">4. What it means for vqc/ to own the gate's tests</h2>
+
+<p>In this version, <code>vqc/</code> is the literal home of every test: each test file and each check script in Jarvis, tom.quest and WikiTom sits under that repository's <code>vqc/</code>. Nothing else about the gate changes. The gate runs the same commands, so the rows it writes certify the same thing they certified the day before the move. This design came out of two rejected versions. Both moved the definition of what runs into <code>vqc/</code> while the files stayed beside the code. The audits found that a list of tests is the register <code>verifiers.md</code> refuses, and that the commands the gate runs are bound up with the gate's own orchestration and cannot be lifted out of Jarvis. Moving the files and leaving the commands untouched has neither problem. The state the work leaves behind is this.</p>
+
+<h3>What a vqc/ directory contains</h3>
+<table>
+<tr><th>Path</th><th>What it holds</th></tr>
+<tr><td><code>vqc/adoption.md</code></td><td>Which articles of the constitution apply to this repository, where its statutes live, and its rulings log, as tom.quest's does today. Jarvis and WikiTom write theirs for the first time.</td></tr>
+<tr><td><code>vqc/ledger.yaml</code></td><td>Dated known gaps, each with the condition that closes it.</td></tr>
+<tr><td><code>vqc/tests/</code></td><td>Every test file, at the same relative path as the code it tests. For example, Jarvis's <code>worker/jobs/gate.test.mjs</code> becomes <code>vqc/tests/worker/jobs/gate.test.mjs</code>. Fixtures move with their tests.</td></tr>
+<tr><td><code>vqc/checks/</code></td><td>Every check script that is not a test: Jarvis's seven <code>scripts/check-*.mjs</code>, tom.quest's eight guardrail scripts, and WikiTom's evidence check.</td></tr>
+<tr><td><code>vqc/e2e/</code> (tom.quest)</td><td>The Playwright specs.</td></tr>
+<tr><td><code>vqc/tests.md</code> (tom.quest)</td><td>Today's <code>docs/tests.md</code>, moved, with its stale per-directory counts removed. It is an overview, not an authority on which tests exist; the directory itself is.</td></tr>
+</table>
+<p>The directory names under <code>vqc/</code> are proposals, and Tom may rename them. tom.quest's existing <code>vqc/</code> files (verifiers, ledger, todos, steering, classification and their two tests) stay where they are. Its two tests move into <code>vqc/tests/vqc/</code>.</p>
+
+<h3>How a test gets in</h3>
+<p>An agent writes the test under <code>vqc/tests/</code>. Each runner's configuration collects only from <code>vqc/</code>: vitest's include patterns, Playwright's <code>testDir</code>, and the <code>node --test</code> pattern Jarvis's code runs for WikiTom. So a test written there runs at the next push, with no entry to make anywhere.</p>
+
+<h3>What happens to a test written anywhere else</h3>
+<p>A runner that collects only from <code>vqc/</code> would never collect it, and nothing would say so. That has already happened twice. tom.quest's nine Python tests in <code>turing-api/</code> are collected by nothing, and Jarvis's vitest today collects only <code>worker/</code>, <code>scripts/</code> and <code>test/</code>. So one new check, the location check, runs in each repository's existing check step. It turns the tests-run row red when any file named like a test (<code>*.test.*</code>, <code>*.spec.*</code>, <code>test_*.py</code>, <code>*_test.py</code>) exists outside <code>vqc/</code>. The silently-uncollected test cannot be deleted instead, because it is created by any agent that writes a test in the usual place next to its code. The check is born with its witness fault, VQC's D8. Its own test plants a test file outside <code>vqc/</code> in a temporary tree and expects red, expects green without it, and expects the repository's other checks to stay green under it. tom.quest's nine Python tests move to <code>vqc/tests/turing-api/</code>. They are still collected by nothing, which is a dated ledger entry that closes when a step runs them. Deleting them needs evidence that what they cover stays covered (D7).</p>
+
+<h3>How the gate reads it</h3>
+<p>It does not change. The gate, the pull-request checker and the recheck run the same commands (<code>pnpm run verify</code>, tom.quest's six steps, the GitHub workflow's jobs, WikiTom's two commands). Those commands now collect from <code>vqc/</code>. Two things in Jarvis's code change for WikiTom only. The <code>node --test</code> pattern collects from both <code>scripts/</code> and <code>vqc/</code> for the duration of the move, then from <code>vqc/</code> alone. The three WikiTom checkouts (the gate's, the pull-request checker's and the recheck's) add <code>vqc/</code> to the paths they hold. tom.quest's affected-tests selection follows imports, not directories, so it keeps working after the move.</p>
+
+<h3>The order of the move</h3>
+<ol>
+<li>Jarvis first, end to end. One branch moves every Jarvis test and check under <code>vqc/</code>, rewrites their import paths, points vitest's include and <code>package.json</code>'s check scripts at the new paths, and adds the location check. It lands through the gate green. A second branch that places a test outside <code>vqc/</code> is blocked. This is the first path the agent rules require: proven by working, not by tests passing. Undoing it is reverting that one landed commit.</li>
+<li>Jarvis's code learns WikiTom's new paths: the dual <code>node --test</code> pattern and the three checkouts.</li>
+<li>tom.quest and WikiTom move in parallel, each in one branch, under the same rules. Each repository's move is one landed commit, reverted alone. Jarvis's dual pattern is narrowed to <code>vqc/</code> after WikiTom's move lands.</li>
+<li>Jarvis and WikiTom write their adoption clauses. Every article of the constitution that applies but is not met is written as dated ledger debt (VQC's ratchet-adoption), including the missing witness faults for existing checks and the conditional skips. An agent reads the constitution article by article against the repository to produce this; nothing gates on it.</li>
+</ol>
+
+<h2 id="rulings">5. Rulings requested</h2>
+<ol>
+<li><strong>Whether the test files move.</strong> If they move, <code>vqc/</code> is the home of every test, as the todo says. One directory holds every test and every check, and the gate is untouched. The cost is one large mechanical move per repository: about 296 test files and the check scripts, their import paths and runner patterns. After it, a test no longer sits next to the code it tests, though it sits at the mirrored path under <code>vqc/tests/</code>. If they do not move, <code>vqc/</code> keeps only the law, ledger and adoption clauses in each repository, and the todo's "home for all tests" is not met. Both earlier ways of meeting it without moving the files were rejected by the audit. Recommendation: move them, because it is what the todo says, and because it is the only version of this design that leaves the gate's commands untouched.</li>
+<li><strong>Whether the location is enforced by a check or by a rule line.</strong> With the location check, a test written outside <code>vqc/</code> turns the row red, at the cost of one more check (with its witness fault) in each repository's check step. With a line in each AGENTS.md instead, the runner silently skips a misplaced test, which VQC's axiom A3 says a prose rule cannot prevent ("prose influences probabilistically"). Recommendation: the check, for the two occurrences named in section 4.</li>
+<li><strong>Whether the audit's criteria move into vqc/ too.</strong> The gate reads two verifiers, the tests and the audit. The audit's questions are in Jarvis's <code>audit.mjs</code>: would landing this break something or do something nobody asked for, weakened or removed tests, secrets, boundaries, deletions of things still used. That file is one of the gate's own, so changing them needs an audit. If only the questions move to <code>vqc/audit.md</code> in Jarvis, <code>vqc/</code> states everything that opens the gate. Under agent-rules.md:33 that file is a rules file and needs no audit to change. It is read from Jarvis's main, so a change is judged under the questions already landed and never its own. The output format and verdict protocol stay in <code>audit.mjs</code>. A missing or unreadable criteria file makes the audit answer UNAVAILABLE, which keeps the gate shut, and the audit row records which commit of the criteria it used. If the questions stay, they keep the audit's protection, but <code>vqc/</code> states only the tests half. Recommendation: move them, because the todo calls VQC how Tom specifies what quality code means, and the audit is the other half of that at the gate.</li>
+</ol>
+<p>Two decisions are taken, not asked, and Tom may object to either. First, the law stays in CMT. Jarvis's and WikiTom's adoption clauses cite it as tom.quest's does, because nothing in this design reads it and CMT's guards depend on its current path. Second, I read "all Jarvis code" as the three repositories the gate lands, Jarvis, tom.quest and WikiTom, and not CMT. This reading is inferred.</p>
+
+<h2 id="audit">6. The Codex audits of earlier versions</h2>
+<p>By Tom's ruling of October 14 ("the design sessions should run codex audits over their design when they are done"), each version was audited by one read-only Codex process (gpt-5.6-sol). Each audit was given his words and the rules the design rests on, quoted with file and line, and asked for every deviation and every case not covered. The agent rules (agent-rules.md, under Committing and merging) stop a design after its third rejection.</p>
+<table>
+<tr><th>Version</th><th>What it proposed</th><th>Audit, Eastern time</th><th>Verdict</th></tr>
+<tr><td>1</td><td>A list in <code>vqc/</code> naming every test with a declared claim and a cadence; any unlisted test turns the gate red; a witness fault required per test; audits of every edit that removes an entry; the law moved to Jarvis.</td><td>9:20 to 9:31 pm</td><td>REJECTED</td></tr>
+<tr><td>2</td><td>Each repository's gate steps moved from Jarvis's code into a steps file in <code>vqc/</code>, read by the gate, the pull-request checker and the recheck; tests stay beside the code.</td><td>9:34 to 9:49 pm</td><td>REJECTED</td></tr>
+<tr><td>3, this page</td><td>The test and check files move into <code>vqc/</code>; the gate's commands are unchanged.</td><td>Not yet audited</td><td>Pending</td></tr>
+</table>
+<p>The findings of the two rounds, read together, give the reason for version 3. Version 1's central defect was that a list of every test is the register <code>verifiers.md</code> refuses: "a cross-cutting dimension every future change had to satisfy". It also declared claims that D7 says are derived, not declared. Version 2's blocking findings had one cause. Its steps file could not express what tom.quest's checks need, which is the base and head commits, the affected-or-full mode and the summary file the row is built from. The install, memory scopes, kill-and-retry handling and recheck behavior were all left without a home. And the switch could not be undone repository by repository. All of these follow from moving the execution contract out of the gate, which is where it belongs. Both audits also said the recommendation against moving the files departed from the todo's words. Version 3 keeps the gate's execution where it is and moves only the files, which resolves both causes. These version 2 findings no longer apply to version 3, because they concern the steps file it drops: the schema, the install policy, kill-and-retry, recheck's own behavior, rows certifying different commands, and fail-loud validation of a steps file. The factual errors both audits found are corrected in sections 1 to 3.</p>
+<p>The third audit is held until Tom has ruled. A third rejection stops iteration on a design, and the choice it would judge, whether the files move, is Tom's to make. The audit then runs on the design as he rules it, before any item is filed.</p>
+<details><summary>Every finding of the two audits and its disposition in version 3</summary>
+<table>
+<tr><th>Finding</th><th>Round</th><th>Disposition in version 3</th></tr>
+<tr><td>A list of every test is the refused register</td><td>1</td><td>No list; the directory is the home.</td></tr>
+<tr><td>A list is not the "home for all tests"; the recommendation departs from Tom's words</td><td>1, 2</td><td>The files move; ruling 1 recommends it.</td></tr>
+<tr><td>D7: claims derived, not declared; coverage per claim</td><td>1</td><td>No claims declared. Deleting the Python tests needs D7 evidence.</td></tr>
+<tr><td>D8: new detectors need witness faults with the collateral-green half</td><td>1, 2</td><td>The one new check, the location check, carries a witness in all three directions. Witnesses for existing checks are ledger debt.</td></tr>
+<tr><td>New audit triggers widen agent-rules.md:33</td><td>1</td><td>None added.</td></tr>
+<tr><td>Post-landing cadence skips the failure-channel prerequisite</td><td>1</td><td>None proposed.</td></tr>
+<tr><td>Weakening must be named in the change's claim (agent-rules.md:126)</td><td>1, 2</td><td>The rule applies unchanged. A move that drops a test, or a check whose count of collected tests falls, names it in its claim. The move branches compare the count of collected tests before and after.</td></tr>
+<tr><td>Hazard occurrence and deletion analysis for new checks (agent-rules.md:86, :113)</td><td>1, 2</td><td>The location check cites two occurrences and says why its cause cannot be deleted (section 4).</td></tr>
+<tr><td>Moving the law; citations not executable</td><td>1</td><td>The law stays in CMT.</td></tr>
+<tr><td>Other row writers bypass; old green rows</td><td>1, 2</td><td>The commands are unchanged, so every writer collects from the same place, and rows before and after certify the same commands.</td></tr>
+<tr><td>Governed unit, runners, skips</td><td>1, 2</td><td>Each runner keeps its own selection and skips. The unconditional perfume skip and the conditional skips become ledger debt in tom.quest's adoption.</td></tr>
+<tr><td>Affected-only vitest</td><td>1, 2</td><td>It follows imports and works unchanged after the move.</td></tr>
+<tr><td>Path and shell safety; the head removing its checker</td><td>1, 2</td><td>No new input format exists. The location check is a test like any other, and its removal is a weakening the claim must name.</td></tr>
+<tr><td>WikiTom's three checkouts lack <code>vqc/</code></td><td>1, 2</td><td>All three gain it, in step 2 of the order.</td></tr>
+<tr><td>Memory containment</td><td>1, 2</td><td>Unchanged: the same commands run under the same scopes.</td></tr>
+<tr><td>Migration order and reversibility</td><td>1, 2</td><td>One landed commit per repository, each reverted alone. The only shared step is Jarvis's dual WikiTom pattern, which accepts both paths.</td></tr>
+<tr><td>Ratchet adoption for Jarvis and WikiTom not inventoried</td><td>2</td><td>Step 4 of the order: an article-by-article reading writes every gap as dated debt.</td></tr>
+<tr><td>Audit-criteria reader needs a failure contract</td><td>2</td><td>Ruling 3 now states it: Jarvis main, questions only, UNAVAILABLE when missing, and the criteria commit recorded on the row.</td></tr>
+<tr><td><code>docs/tests.md</code> stale and its references</td><td>2</td><td>It moves as an overview without counts. Its five references (AGENTS.md, <code>vqc/adoption.md</code>, <code>vitest.config.mts</code>, <code>tests-affected.mjs</code>, <code>skills.test.mjs</code>) move with it.</td></tr>
+<tr><td>An add-then-remove test is governed only by the final head</td><td>2</td><td>Stated: VQC governs the landed tree.</td></tr>
+<tr><td>The gate's <code>worker/cron</code> audit trigger contradicts agent-rules.md:33</td><td>1, 2</td><td>Existing code drifting from the rule, unchanged by this design. It goes to the observer as a fix.</td></tr>
+<tr><td>WikiTom's nightly commits land without the checks, against agent-rules.md:33's whole-suite line</td><td>2</td><td>Existing code, unchanged by this design. It goes to the observer with the reason quoted in section 3 and the audit's suggested replacement: send the nightly commit through the gate on a branch.</td></tr>
+<tr><td>Factual errors (twenty across both rounds)</td><td>1, 2</td><td>Corrected in sections 1 to 3.</td></tr>
+</table>
+</details>
+
+<h2 id="later">7. What this design leaves for later, and why</h2>
+<table>
+<tr><th>Later work</th><th>Why it waits</th></tr>
+<tr><td>A general witness-fault harness in JavaScript (D8) for existing checks</td><td>It needs its own design. Existing checks carry the gap as ledger debt; tom.quest's ledger already has <code>no-witness-fault-harness</code>.</td></tr>
+<tr><td>Derived claims and coverage per claim (D7)</td><td>It depends on witness faults.</td></tr>
+<tr><td>Steps that run after landing instead of blocking</td><td>The agent rules keep the whole suite blocking until the failure channel is readable.</td></tr>
+<tr><td>Moving the law out of CMT</td><td>Nothing reads it here, and CMT's guards depend on its path.</td></tr>
+<tr><td>A step that runs tom.quest's Python tests</td><td>It is a ledger entry; the tests are collected by nothing today.</td></tr>
+</table>
+
+<h2 id="corrections">8. What the setup brief had wrong</h2>
+<table>
+<tr><th>The brief said</th><th>What the files show</th></tr>
+<tr><td>CMT's vqc/ holds steering.yaml</td><td>CMT deleted steering.yaml and todos.yaml on September 24 (ruling 70). It holds skills.yaml and september-glossary.yaml, which the brief did not list.</td></tr>
+<tr><td>tom.quest has vqc/verifiers.md</td><td>It also has an adoption clause, a ledger, steering, todos, a classification of files, cites.ts and two test files.</td></tr>
+<tr><td>tom.quest's gate step runs vitest plus the guardrail scripts</td><td>It runs install and six steps, and vitest runs only the files the change reaches, except under the conditions in section 3.</td></tr>
+<tr><td>The gate runs the whole test suite</td><td>True for Jarvis. Conditional for tom.quest. WikiTom has one test file.</td></tr>
+</table>
+
+<h2 id="unchanged">9. What this leaves unchanged</h2>
+<p>The gate, its step table, the commands each repository runs, the memory scopes and limits, the walls, the audit's triggers and models, the evals, the two rows the record reads, and how main moves all stay as they are. The code under test does not change; only the tests' and checks' paths and import lines do. CMT is not touched.</p>
+
+<h2 id="next">10. What happens next</h2>
+<p>When Tom joins, we work through the three rulings. The design as he rules it then goes to the third Codex audit. After his explicit go and an approving audit, the session writes the items to build to <code>/var/lib/tts/design-vqc-work.txt</code> for his desktop session: for each item, the files it touches and the items it waits on. If the third audit rejects, the design goes back to Tom with every finding of the three rounds, not to a fourth version.</p>
+
+</body>
+</html>
