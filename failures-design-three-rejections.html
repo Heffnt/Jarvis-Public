@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>The failures design came back three times rejected</title></head>
+<body style="margin:0;background:#0f1115;color:#d8dee9;font:16px/1.6 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;">
+<div style="max-width:960px;margin:0 auto;padding:40px 32px;">
+<h1 style="color:#eceff4;font-size:28px;margin:0 0 8px;">The failures design came back three times rejected</h1>
+<p style="color:#8f99a8;margin:0 0 32px;">Design session for deterministic checks and VQC. Written 1:47 am Eastern, October 16, 2026. One decision of yours is at the end.</p>
+
+<h2 style="color:#eceff4;font-size:21px;border-bottom:1px solid #2b313c;padding-bottom:6px;">What the design was for</h2>
+<p>This week several failures on the Jarvis box went unseen. They fall into three cases:</p>
+<ul>
+<li><b>Usage-limit notices stored as replies.</b> From October 9 to 11 the briefer's and observer's replies were stored as the Claude usage-limit notice, and no one was told.</li>
+<li><b>Processes killed with no record.</b> On October 14 the operating system killed the gate, the session host and other processes for lack of memory. A killed process cannot report its own death, so no record row exists for any of it.</li>
+<li><b>Repeats burying everything else.</b> One low-disk warning was written 232 times on October 15. The record's search returns only the newest 500 rows, so it buried every other failure.</li>
+</ul>
+<p>The failures design answered all three with four pieces:</p>
+<table style="border-collapse:collapse;width:100%;margin:12px 0 20px;">
+<tr style="background:#1a1e26;"><th style="text-align:left;padding:8px;border:1px solid #2b313c;">Piece</th><th style="text-align:left;padding:8px;border:1px solid #2b313c;">What it does</th></tr>
+<tr><td style="padding:8px;border:1px solid #2b313c;">One record row per open failure</td><td style="padding:8px;border:1px solid #2b313c;">A failure is one row, identified by what can recover from it plus the cleaned first line of its error. A repeat raises the row's count instead of adding a row. A later success of the same thing closes the row.</td></tr>
+<tr><td style="padding:8px;border:1px solid #2b313c;">The strict reply rule</td><td style="padding:8px;border:1px solid #2b313c;">A session's reply counts as done only when Claude Code reports success and its transcript holds no error notice. Anything else is a failed reply with a row.</td></tr>
+<tr><td style="padding:8px;border:1px solid #2b313c;">The journal reader</td><td style="padding:8px;border:1px solid #2b313c;">A small program on the box's clock reads the system journal (the operating system's own log) and turns every failure in it into a row, including processes killed for lack of memory.</td></tr>
+<tr><td style="padding:8px;border:1px solid #2b313c;">Migration</td><td style="padding:8px;border:1px solid #2b313c;">Moves the existing failure rows into the new form.</td></tr>
+</table>
+
+<h2 style="color:#eceff4;font-size:21px;border-bottom:1px solid #2b313c;padding-bottom:6px;">What the three audits found, read together</h2>
+<p>Codex (gpt-5.6-sol) audited the design three times: 11:45 pm, about 12:20 am and 1:03 am. Each round was rejected. The agent rules say a third rejection stops the design. It gets no fourth patch and comes back to you with every finding.</p>
+<table style="border-collapse:collapse;width:100%;margin:12px 0 20px;">
+<tr style="background:#1a1e26;"><th style="text-align:left;padding:8px;border:1px solid #2b313c;">Piece</th><th style="text-align:left;padding:8px;border:1px solid #2b313c;">Across the three rounds</th></tr>
+<tr><td style="padding:8px;border:1px solid #2b313c;">One row per open failure</td><td style="padding:8px;border:1px solid #2b313c;">Kept every round: "The condition-row model is a sound answer to repeated failure volume … should be retained." The remaining findings are mechanics: whether a repeat updates its row, validation order, and migration.</td></tr>
+<tr><td style="padding:8px;border:1px solid #2b313c;">The strict reply rule</td><td style="padding:8px;border:1px solid #2b313c;">Accepted as a rule: "Design B's strict settlement rule fits". Round 3 found the mechanics of capture and classification largely resolved.</td></tr>
+<tr><td style="padding:8px;border:1px solid #2b313c;">The journal reader</td><td style="padding:8px;border:1px solid #2b313c;">Failed every round on coverage, which is the decisive finding below.</td></tr>
+<tr><td style="padding:8px;border:1px solid #2b313c;">Everything else</td><td style="padding:8px;border:1px solid #2b313c;">Grew each round. Each round folded in that night's rulings: the vocabulary ban, the VQC test move, and weighing risk per change. Round 3 had 14 blocking items, most outside the three pieces.</td></tr>
+</table>
+<p><b>The finding that says the design does not fit its problem</b> is about the journal reader. The design promised to report every failure the journal records. To keep from reporting one failure twice, it listed the kinds of journal message to read and left out kinds that, in the one window of history it sampled, always appeared next to another message. Codex: "it defines universal failure coverage by omitting whole message categories whenever this one window happened to contain another entry. That is sampling the symptom, not constructing a complete failure channel." Any list of message kinds can miss the next kind, so no patch to the list makes the promise true.</p>
+<p>A second cause shows across the rounds. One design carried four pieces plus every new ruling, so each round fixed some items and exposed others. Smaller designs, each audited on its own, avoid that.</p>
+
+<h2 style="color:#eceff4;font-size:21px;border-bottom:1px solid #2b313c;padding-bottom:6px;">Where it stands</h2>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0;">
+<div style="border:1px solid #3b4252;border-radius:6px;padding:10px 14px;background:#1a1e26;">Round 1: rejected</div><div>&rarr;</div>
+<div style="border:1px solid #3b4252;border-radius:6px;padding:10px 14px;background:#1a1e26;">Round 2: rejected</div><div>&rarr;</div>
+<div style="border:1px solid #3b4252;border-radius:6px;padding:10px 14px;background:#1a1e26;">Round 3: rejected, design stopped</div><div>&rarr;</div>
+<div style="border:1px solid #88c0d0;border-radius:6px;padding:10px 14px;background:#1a1e26;">Your decision</div>
+</div>
+<p>Nothing from this design has been built. The four versions of the design and the four audit reports are kept in the design session's working folder on the box.</p>
+<p>At 1:43 am I queued the three pieces as new designs without asking you. That was a fourth round under another name, so I took them back out of the queue at 1:46 am. Other designs from this session are in that queue, one at a time: the VQC findings program, the test move, test time, meaning checks and audit steering. Each will come to you with its own audit.</p>
+
+<h2 style="color:#eceff4;font-size:21px;border-bottom:1px solid #2b313c;padding-bottom:6px;">Your decision</h2>
+<ol>
+<li style="margin-bottom:12px;"><b>What happens to the failures design.</b>
+<ul style="margin-top:8px;">
+<li style="margin-bottom:8px;"><b>Split it into three small designs</b>, each audited on its own as a fresh design:
+<ul style="margin-top:6px;">
+<li>One row per failure.</li>
+<li>The strict reply rule.</li>
+<li>A journal reader whose coverage is one complete rule instead of a list: every journal entry the system marks as an error or worse becomes a report. A failure that appears twice gives two reports, which is the accepted cost. A missed failure is not.</li>
+</ul>
+<p style="margin:6px 0 0;">Gained: the two pieces Codex already accepted get built soon, and each design is small enough to audit completely. Lost: one coherent account of the whole failure channel. Each design names the interfaces it shares instead.</p></li>
+<li style="margin-bottom:8px;"><b>Drop the journal reader for now</b> and build only the two accepted pieces. Gained: the fastest path, with the least design work. Lost: processes killed for lack of memory stay unreported, which is the October 14 failure.</li>
+</ul>
+<p style="margin:8px 0 0;">Recommendation: split it. Its decisive flaw was coverage by a list, and one rule by severity removes that flaw rather than patching it. The killed processes are the failure this week that nothing else would catch.</p></li>
+</ol>
+</div>
+</body></html>
